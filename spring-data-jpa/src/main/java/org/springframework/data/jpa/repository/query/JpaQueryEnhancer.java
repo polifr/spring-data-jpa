@@ -18,6 +18,7 @@ package org.springframework.data.jpa.repository.query;
 import java.util.Set;
 
 import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.query.ReturnedType;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -67,10 +68,20 @@ class JpaQueryEnhancer implements QueryEnhancer {
 	 * @return a new {@link JpaQueryEnhancer} using HQL.
 	 */
 	public static JpaQueryEnhancer forHql(DeclaredQuery query) {
+		return forHql(query, null);
+	}
+
+	/**
+	 * Factory method to create a {@link JpaQueryParserSupport} for {@link DeclaredQuery} using HQL grammar.
+	 *
+	 * @param query must not be {@literal null}.
+	 * @return a new {@link JpaQueryEnhancer} using HQL.
+	 */
+	public static JpaQueryEnhancer forHql(DeclaredQuery query, @Nullable ReturnedType returnedType) {
 
 		Assert.notNull(query, "DeclaredQuery must not be null!");
 
-		return new JpaQueryEnhancer(query, new HqlQueryParser(query.getQueryString()));
+		return new JpaQueryEnhancer(query, new HqlQueryParser(query.getQueryString(), returnedType));
 	}
 
 	protected JpaQueryParserSupport getQueryParsingStrategy() {

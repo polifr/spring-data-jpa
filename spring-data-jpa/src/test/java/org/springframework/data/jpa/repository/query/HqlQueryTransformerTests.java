@@ -17,6 +17,8 @@ package org.springframework.data.jpa.repository.query;
 
 import static org.assertj.core.api.Assertions.*;
 
+import jakarta.persistence.Entity;
+
 import java.util.stream.Stream;
 
 import org.assertj.core.api.SoftAssertions;
@@ -27,7 +29,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.jpa.domain.JpaSort;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
+import org.springframework.data.repository.core.support.DefaultRepositoryMetadata;
+import org.springframework.data.repository.query.QueryMethod;
+import org.springframework.data.repository.query.ReturnedType;
 import org.springframework.lang.Nullable;
 
 /**
@@ -205,7 +214,7 @@ class HqlQueryTransformerTests {
 	@Test // GH-2557
 	void applySortingAccountsForNewlinesInSubselect() {
 
-		Sort sort = Sort.by(Sort.Order.desc("age"));
+		Sort sort = Sort.by(Order.desc("age"));
 
 		//
 		//
@@ -266,7 +275,7 @@ class HqlQueryTransformerTests {
 	void appliesIgnoreCaseOrderingCorrectly() {
 
 		String query = "select p from Person p";
-		Sort sort = Sort.by(Sort.Order.by("firstname").ignoreCase());
+		Sort sort = Sort.by(Order.by("firstname").ignoreCase());
 
 		assertThat(createQueryFor(query, sort)).endsWith("order by lower(p.firstname) asc");
 	}
@@ -275,7 +284,7 @@ class HqlQueryTransformerTests {
 	void appendsIgnoreCaseOrderingCorrectly() {
 
 		String query = "select p from Person p order by p.lastname asc";
-		Sort sort = Sort.by(Sort.Order.by("firstname").ignoreCase());
+		Sort sort = Sort.by(Order.by("firstname").ignoreCase());
 
 		assertThat(createQueryFor(query, sort))
 				.isEqualTo("select p from Person p order by p.lastname asc, lower(p.firstname) asc");
@@ -536,7 +545,7 @@ class HqlQueryTransformerTests {
 	void appliesOrderingCorrectlyForFieldAliasWithIgnoreCase() {
 
 		String query = "SELECT customer.id as id, customer.name as name FROM CustomerEntity customer";
-		Sort sort = Sort.by(Sort.Order.by("name").ignoreCase());
+		Sort sort = Sort.by(Order.by("name").ignoreCase());
 
 		String fullQuery = createQueryFor(query, sort);
 
@@ -661,7 +670,7 @@ class HqlQueryTransformerTests {
 	@Test // GH-2260
 	void applySortingAccountsForNativeWindowFunction() {
 
-		Sort sort = Sort.by(Sort.Order.desc("age"));
+		Sort sort = Sort.by(Order.desc("age"));
 
 		// order by absent
 		assertThat(createQueryFor("select u from user u", sort)).isEqualTo("select u from user u order by u.age desc");
@@ -753,7 +762,7 @@ class HqlQueryTransformerTests {
 	@Test // GH-2496, GH-2522, GH-2537, GH-2045
 	void orderByShouldWorkWithSubSelectStatements() {
 
-		Sort sort = Sort.by(Sort.Order.desc("age"));
+		Sort sort = Sort.by(Order.desc("age"));
 
 		assertThat(createQueryFor("""
 				SELECT
@@ -830,7 +839,7 @@ class HqlQueryTransformerTests {
 
 		assertThat(createQueryFor(
 				"select e from SampleEntity e  where function('nativeFunc', ?1) > 'testVal'  order by function('nativeFunc', ?1)",
-				Sort.by(Sort.Order.desc("age")))).isEqualTo(
+				Sort.by(Order.desc("age")))).isEqualTo(
 						"select e from SampleEntity e where function('nativeFunc', ?1) > 'testVal' order by function('nativeFunc', ?1), e.age desc");
 	}
 
@@ -991,14 +1000,14 @@ class HqlQueryTransformerTests {
 
 		String query = "select p from Customer c join c.productOrder p where p.delayed = true";
 
-		assertThat(createQueryFor(query, Sort.by(Sort.Order.desc("lastName")))).isEqualToIgnoringWhitespace("""
+		assertThat(createQueryFor(query, Sort.by(Order.desc("lastName")))).isEqualToIgnoringWhitespace("""
 				select p from Customer c
 				join c.productOrder p
 				where p.delayed = true
 				order by c.lastName desc
 				""");
 
-		assertThat(createQueryFor(query, Sort.by(Sort.Order.desc("p.lineItems")))).isEqualToIgnoringWhitespace("""
+		assertThat(createQueryFor(query, Sort.by(Order.desc("p.lineItems")))).isEqualToIgnoringWhitespace("""
 				select p from Customer c
 				join c.productOrder p
 				where p.delayed = true
@@ -1009,26 +1018,63 @@ class HqlQueryTransformerTests {
 	@Test // GH-3054
 	void aliasesShouldNotOverlapWithSortProperties() {
 
-		assertThat(
-				createQueryFor("select e from Employee e where e.name = :name", Sort.by(Sort.Order.desc("evaluationDate"))))
-						.isEqualToIgnoringWhitespace(
-								"select e from Employee e where e.name = :name order by e.evaluationDate desc");
+		assertThat(createQueryFor("select e from Employee e where e.name = :name", Sort.by(Order.desc("evaluationDate"))))
+				.isEqualToIgnoringWhitespace("select e from Employee e where e.name = :name order by e.evaluationDate desc");
 
 		assertThat(createQueryFor("select e from Employee e join training t where e.name = :name",
-				Sort.by(Sort.Order.desc("trainingDueDate")))).isEqualToIgnoringWhitespace(
+				Sort.by(Order.desc("trainingDueDate")))).isEqualToIgnoringWhitespace(
 						"select e from Employee e join training t where e.name = :name order by e.trainingDueDate desc");
 
 		assertThat(createQueryFor("select e from Employee e join training t where e.name = :name",
-				Sort.by(Sort.Order.desc("t.trainingDueDate")))).isEqualToIgnoringWhitespace(
+				Sort.by(Order.desc("t.trainingDueDate")))).isEqualToIgnoringWhitespace(
 						"select e from Employee e join training t where e.name = :name order by t.trainingDueDate desc");
 
 		assertThat(createQueryFor("SELECT t3 FROM Test3 t3 JOIN t3.test2 t2 JOIN t2.test1 test WHERE test.id = :test1Id",
-				Sort.by(Sort.Order.desc("testDuplicateColumnName")))).isEqualToIgnoringWhitespace(
+				Sort.by(Order.desc("testDuplicateColumnName")))).isEqualToIgnoringWhitespace(
 						"SELECT t3 FROM Test3 t3 JOIN t3.test2 t2 JOIN t2.test1 test WHERE test.id = :test1Id order by t3.testDuplicateColumnName desc");
 
 		assertThat(createQueryFor("SELECT t3 FROM Test3 t3 JOIN t3.test2 x WHERE x.id = :test2Id",
-				Sort.by(Sort.Order.desc("t3.testDuplicateColumnName")))).isEqualToIgnoringWhitespace(
+				Sort.by(Order.desc("t3.testDuplicateColumnName")))).isEqualToIgnoringWhitespace(
 						"SELECT t3 FROM Test3 t3 JOIN t3.test2 x WHERE x.id = :test2Id order by t3.testDuplicateColumnName desc");
+	}
+
+	@Test // GH-3076
+	void dtoShouldRewriteQueryUsingDtoTypeThroughNewConstructor() throws NoSuchMethodException {
+
+		QueryMethod method = new QueryMethod(EmployeeRepository.class.getMethod("dtoBasedQuery", String.class),
+				new DefaultRepositoryMetadata(EmployeeRepository.class), new SpelAwareProxyProjectionFactory());
+
+		ReturnedType returnedType = method.getResultProcessor().getReturnedType();
+
+		assertThat(createQueryFor("select e from Employee e where e.name = :name", Sort.unsorted(), returnedType))
+				.isEqualToIgnoringWhitespace(
+						"select new org.springframework.data.jpa.repository.query.HqlQueryTransformerTests.EmployeeDto(e) from Employee e where e.name = :name");
+	}
+
+	@Test // GH-3076
+	void nonDtoShouldNotRewriteQueryUsingNewConstructor() throws NoSuchMethodException {
+
+		QueryMethod method = new QueryMethod(EmployeeRepository.class.getMethod("nonDtoBasedQuery", String.class),
+				new DefaultRepositoryMetadata(EmployeeRepository.class), new SpelAwareProxyProjectionFactory());
+
+		ReturnedType returnedType = method.getResultProcessor().getReturnedType();
+
+		assertThat(createQueryFor("select e from Employee e where e.name = :name", Sort.unsorted(), returnedType))
+				.isEqualToIgnoringWhitespace("select e from Employee e where e.name = :name");
+	}
+
+	@Entity
+	static class Employee {}
+
+	static class EmployeeDto {}
+
+	interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+		@Query("select e from Employee e where e.name = :name")
+		EmployeeDto dtoBasedQuery(String name);
+
+		@Query("select e from Employee e where e.name = :name")
+		Employee nonDtoBasedQuery(String name);
 	}
 
 	private void assertCountQuery(String originalQuery, String countQuery) {
@@ -1037,6 +1083,10 @@ class HqlQueryTransformerTests {
 
 	private String createQueryFor(String query, Sort sort) {
 		return newParser(query).applySorting(sort);
+	}
+
+	private String createQueryFor(String query, Sort sort, ReturnedType returnedType) {
+		return newParser(query, returnedType).applySorting(sort);
 	}
 
 	private String createCountQueryFor(String query) {
@@ -1061,6 +1111,10 @@ class HqlQueryTransformerTests {
 	}
 
 	private QueryEnhancer newParser(String query) {
-		return JpaQueryEnhancer.forHql(DeclaredQuery.of(query, false));
+		return newParser(query, null);
+	}
+
+	private QueryEnhancer newParser(String query, @Nullable ReturnedType returnedType) {
+		return JpaQueryEnhancer.forHql(DeclaredQuery.of(query, false), returnedType);
 	}
 }

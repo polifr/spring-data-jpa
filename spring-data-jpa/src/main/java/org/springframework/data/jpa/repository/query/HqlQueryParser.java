@@ -21,6 +21,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.query.ReturnedType;
 import org.springframework.lang.Nullable;
 
 /**
@@ -33,8 +34,12 @@ import org.springframework.lang.Nullable;
  */
 class HqlQueryParser extends JpaQueryParserSupport {
 
-	HqlQueryParser(String query) {
+	private final ReturnedType returnedType;
+
+	HqlQueryParser(String query, @Nullable ReturnedType returnedType) {
+
 		super(query);
+		this.returnedType = returnedType;
 	}
 
 	/**
@@ -72,7 +77,7 @@ class HqlQueryParser extends JpaQueryParserSupport {
 	 */
 	@Override
 	protected List<JpaQueryParsingToken> applySort(ParserRuleContext parsedQuery, Sort sort) {
-		return new HqlQueryTransformer(sort).visit(parsedQuery);
+		return new HqlQueryTransformer(sort, returnedType).visit(parsedQuery);
 	}
 
 	/**
@@ -85,7 +90,7 @@ class HqlQueryParser extends JpaQueryParserSupport {
 	@Override
 	protected List<JpaQueryParsingToken> doCreateCountQuery(ParserRuleContext parsedQuery,
 			@Nullable String countProjection) {
-		return new HqlQueryTransformer(true, countProjection).visit(parsedQuery);
+		return new HqlQueryTransformer(true, countProjection, returnedType).visit(parsedQuery);
 	}
 
 	/**

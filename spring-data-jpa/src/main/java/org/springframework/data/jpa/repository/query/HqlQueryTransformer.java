@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.query.ReturnedType;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -50,19 +51,24 @@ class HqlQueryTransformer extends HqlQueryRenderer {
 
 	private JpaQueryTransformerSupport transformerSupport;
 
+	private @Nullable String entityType = null;
+
+	private final ReturnedType returnedType;
+
 	HqlQueryTransformer() {
-		this(Sort.unsorted(), false, null);
+		this(Sort.unsorted(), false, null, null);
 	}
 
-	HqlQueryTransformer(Sort sort) {
-		this(sort, false, null);
+	HqlQueryTransformer(Sort sort, @Nullable ReturnedType returnedType) {
+		this(sort, false, null, returnedType);
 	}
 
-	HqlQueryTransformer(boolean countQuery, @Nullable String countProjection) {
-		this(Sort.unsorted(), countQuery, countProjection);
+	HqlQueryTransformer(boolean countQuery, @Nullable String countProjection, @Nullable ReturnedType returnedType) {
+		this(Sort.unsorted(), countQuery, countProjection, returnedType);
 	}
 
-	private HqlQueryTransformer(Sort sort, boolean countQuery, @Nullable String countProjection) {
+	private HqlQueryTransformer(Sort sort, boolean countQuery, @Nullable String countProjection,
+			@Nullable ReturnedType returnedType) {
 
 		Assert.notNull(sort, "Sort must not be null");
 
@@ -70,6 +76,7 @@ class HqlQueryTransformer extends HqlQueryRenderer {
 		this.countQuery = countQuery;
 		this.countProjection = countProjection;
 		this.transformerSupport = new JpaQueryTransformerSupport();
+		this.returnedType = returnedType;
 	}
 
 	@Nullable
@@ -372,13 +379,49 @@ class HqlQueryTransformer extends HqlQueryRenderer {
 			NOSPACE(tokens);
 			tokens.add(TOKEN_CLOSE_PAREN);
 		} else {
-			tokens.addAll(selectionListTokens);
+
+			if (returnedType != null && !returnedType.getReturnedType().isInterface()) {
+
+				tokens.add(new JpaQueryParsingToken(() -> {
+
+					if (!this.entityType.equalsIgnoreCase(returnedType.getReturnedType().getSimpleName())) {
+
+						List<JpaQueryParsingToken> dtoSelectionListTokens = newArrayList();
+
+						dtoSelectionListTokens
+								.add(new JpaQueryParsingToken("new " + returnedType.getReturnedType().getCanonicalName(), false));
+						dtoSelectionListTokens.add(TOKEN_OPEN_PAREN);
+
+						dtoSelectionListTokens.addAll(selectionListTokens);
+						NOSPACE(dtoSelectionListTokens);
+
+						dtoSelectionListTokens.add(TOKEN_CLOSE_PAREN);
+
+						return render(dtoSelectionListTokens);
+					} else {
+						return render(selectionListTokens);
+					}
+				}));
+
+			} else {
+				tokens.addAll(selectionListTokens);
+			}
 		}
 
 		if (!projectionProcessed && !isSubquery(ctx)) {
 			projection = selectionListTokens;
 			projectionProcessed = true;
 		}
+
+		return tokens;
+	}
+
+	@Override
+	public List<JpaQueryParsingToken> visitEntityName(HqlParser.EntityNameContext ctx) {
+
+		List<JpaQueryParsingToken> tokens = super.visitEntityName(ctx);
+
+		this.entityType = render(tokens);
 
 		return tokens;
 	}

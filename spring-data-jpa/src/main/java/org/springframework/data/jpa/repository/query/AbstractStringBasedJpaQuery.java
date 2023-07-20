@@ -92,7 +92,8 @@ abstract class AbstractStringBasedJpaQuery extends AbstractJpaQuery {
 	@Override
 	public Query doCreateQuery(JpaParametersParameterAccessor accessor) {
 
-		String sortedQueryString = QueryEnhancerFactory.forQuery(query) //
+		String sortedQueryString = QueryEnhancerFactory
+				.forQuery(query, getQueryMethod().getResultProcessor().getReturnedType()) //
 				.applySorting(accessor.getSort(), query.getAlias());
 		ResultProcessor processor = getQueryMethod().getResultProcessor().withDynamicProjection(accessor);
 

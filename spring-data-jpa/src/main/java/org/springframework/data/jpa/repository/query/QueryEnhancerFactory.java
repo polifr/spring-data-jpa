@@ -17,6 +17,8 @@ package org.springframework.data.jpa.repository.query;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.data.repository.query.ReturnedType;
+import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -57,6 +59,16 @@ public final class QueryEnhancerFactory {
 	 * @return an implementation of {@link QueryEnhancer} that suits the query the most
 	 */
 	public static QueryEnhancer forQuery(DeclaredQuery query) {
+		return forQuery(query, null);
+	}
+
+	/**
+	 * Creates a new {@link QueryEnhancer} for the given {@link DeclaredQuery}.
+	 *
+	 * @param query must not be {@literal null}.
+	 * @return an implementation of {@link QueryEnhancer} that suits the query the most
+	 */
+	public static QueryEnhancer forQuery(DeclaredQuery query, @Nullable ReturnedType returnedType) {
 
 		if (query.isNativeQuery()) {
 
@@ -70,7 +82,7 @@ public final class QueryEnhancerFactory {
 			return new DefaultQueryEnhancer(query);
 		}
 
-		return hibernatePresent ? JpaQueryEnhancer.forHql(query) : JpaQueryEnhancer.forJpql(query);
+		return hibernatePresent ? JpaQueryEnhancer.forHql(query, returnedType) : JpaQueryEnhancer.forJpql(query);
 	}
 
 }
