@@ -384,6 +384,12 @@ class HqlQueryTransformer extends HqlQueryRenderer {
 
 				tokens.add(new JpaQueryParsingToken(() -> {
 
+					String prerenderedSelectionList = render(selectionListTokens);
+
+					if (prerenderedSelectionList.contains("(")) { // selection list contains a function invocation
+						return prerenderedSelectionList;
+					}
+
 					if (!this.entityType.equalsIgnoreCase(returnedType.getReturnedType().getSimpleName())) {
 
 						List<JpaQueryParsingToken> dtoSelectionListTokens = newArrayList();
@@ -399,7 +405,7 @@ class HqlQueryTransformer extends HqlQueryRenderer {
 
 						return render(dtoSelectionListTokens);
 					} else {
-						return render(selectionListTokens);
+						return prerenderedSelectionList;
 					}
 				}));
 
