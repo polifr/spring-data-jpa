@@ -69,6 +69,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<List<JpaQueryParsingToken>> {
 
 		for (int i = 1; i < ctx.orderedQuery().size(); i++) {
 
+			SPACE(tokens);
 			tokens.addAll(visit(ctx.setOperator(i - 1)));
 			tokens.addAll(visit(ctx.orderedQuery(i)));
 		}

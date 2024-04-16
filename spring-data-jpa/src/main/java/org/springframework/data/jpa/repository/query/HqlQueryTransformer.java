@@ -288,7 +288,7 @@ class HqlQueryTransformer extends HqlQueryRenderer {
 
 		List<JpaQueryParsingToken> tokens = super.visitJoinPath(ctx);
 
-		if (ctx.variable() != null) {
+		if (ctx.variable() != null && !isSubquery(ctx)) {
 			transformerSupport.registerAlias(tokens.get(tokens.size() - 1).getToken());
 		}
 
@@ -300,7 +300,7 @@ class HqlQueryTransformer extends HqlQueryRenderer {
 
 		List<JpaQueryParsingToken> tokens = super.visitJoinSubquery(ctx);
 
-		if (ctx.variable() != null) {
+		if (ctx.variable() != null && !isSubquery(ctx)) {
 			transformerSupport.registerAlias(tokens.get(tokens.size() - 1).getToken());
 		}
 
@@ -324,7 +324,7 @@ class HqlQueryTransformer extends HqlQueryRenderer {
 
 		List<JpaQueryParsingToken> tokens = super.visitVariable(ctx);
 
-		if (ctx.identifier() != null) {
+		if (ctx.identifier() != null && !isSubquery(ctx)) {
 			transformerSupport.registerAlias(tokens.get(tokens.size() - 1).getToken());
 		}
 
