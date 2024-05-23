@@ -160,7 +160,7 @@ class JpaQueryEnhancer implements QueryEnhancer {
 	 */
 	@Override
 	public String getProjection() {
-		return queryParser.projection();
+		return queryParser.getProjection();
 	}
 
 	/**

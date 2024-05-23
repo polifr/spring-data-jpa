@@ -463,7 +463,7 @@ class HqlQueryTransformerTests {
 		String query = "SELECT AVG(m.price) AS m.avg FROM Magazine m";
 		Sort sort = Sort.by("m.avg");
 
-		assertThatIllegalArgumentException().isThrownBy(() -> createQueryFor(query, sort));
+		assertThatExceptionOfType(BadJpqlGrammarException.class).isThrownBy(() -> createQueryFor(query, sort));
 	}
 
 	@Test // DATAJPA-965, DATAJPA-970, GH-2863
@@ -478,8 +478,10 @@ class HqlQueryTransformerTests {
 	@Test // DATAJPA-1506
 	void detectsAliasWithGroupAndOrderBy() {
 
-		assertThat(alias("select * from User group by name")).isNull();
-		assertThat(alias("select * from User order by name")).isNull();
+		assertThatExceptionOfType(BadJpqlGrammarException.class)
+				.isThrownBy(() -> alias("select * from User group by name"));
+		assertThatExceptionOfType(BadJpqlGrammarException.class)
+				.isThrownBy(() -> alias("select * from User order by name"));
 		assertThat(alias("select u from User u group by name")).isEqualTo("u");
 		assertThat(alias("select u from User u order by name")).isEqualTo("u");
 	}
@@ -593,8 +595,10 @@ class HqlQueryTransformerTests {
 	@Test
 	void detectsAliasWithGroupAndOrderByWithLineBreaks() {
 
-		assertThat(alias("select * from User group\nby name")).isNull();
-		assertThat(alias("select * from User order\nby name")).isNull();
+		assertThatExceptionOfType(BadJpqlGrammarException.class)
+				.isThrownBy(() -> alias("select * from User group\nby name"));
+		assertThatExceptionOfType(BadJpqlGrammarException.class)
+				.isThrownBy(() -> alias("select * from User order\nby name"));
 		assertThat(alias("select u from User u group\nby name")).isEqualTo("u");
 		assertThat(alias("select u from User u order\nby name")).isEqualTo("u");
 		assertThat(alias("select u from User\nu\norder \n by name")).isEqualTo("u");
@@ -617,7 +621,8 @@ class HqlQueryTransformerTests {
 		// This is not a required behavior, in fact the opposite is,
 		// but it documents a current limitation.
 		// to fix this without breaking findProjectionClauseWithIncludedFrom we need a more sophisticated parser.
-		assertThat(projection("select * from (select x from y)")).isNotEqualTo("*");
+		assertThatExceptionOfType(BadJpqlGrammarException.class)
+				.isThrownBy(() -> projection("select * from (select x from y)"));
 	}
 
 	@Test // DATAJPA-1696

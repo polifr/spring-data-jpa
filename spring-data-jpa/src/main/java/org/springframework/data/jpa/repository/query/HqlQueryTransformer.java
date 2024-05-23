@@ -91,7 +91,7 @@ class HqlQueryTransformer extends HqlQueryRenderer {
 	 *
 	 * @return boolean
 	 */
-	private static boolean isSubquery(ParserRuleContext ctx) {
+	static boolean isSubquery(ParserRuleContext ctx) {
 
 		if (ctx instanceof HqlParser.SubqueryContext) {
 			return true;

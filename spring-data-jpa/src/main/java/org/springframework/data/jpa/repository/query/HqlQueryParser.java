@@ -20,6 +20,7 @@ import java.util.List;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
+
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.Nullable;
 
@@ -34,7 +35,7 @@ import org.springframework.lang.Nullable;
 class HqlQueryParser extends JpaQueryParserSupport {
 
 	HqlQueryParser(String query) {
-		super(query);
+		super(parseQuery(query), new HqlQueryIntrospector());
 	}
 
 	/**
@@ -51,16 +52,6 @@ class HqlQueryParser extends JpaQueryParserSupport {
 		configureParser(query, lexer, parser);
 
 		return parser.start();
-	}
-
-	/**
-	 * Parse the query using {@link #parseQuery(String)}.
-	 *
-	 * @return a parsed query
-	 */
-	@Override
-	protected ParserRuleContext parse(String query) {
-		return parseQuery(query);
 	}
 
 	/**
@@ -88,46 +79,4 @@ class HqlQueryParser extends JpaQueryParserSupport {
 		return new HqlQueryTransformer(true, countProjection).visit(parsedQuery);
 	}
 
-	/**
-	 * Run the parsed query through {@link HqlQueryTransformer} to find the primary FROM clause's alias.
-	 *
-	 * @param parsedQuery
-	 * @return can be {@literal null}
-	 */
-	@Override
-	protected String doFindAlias(ParserRuleContext parsedQuery) {
-
-		HqlQueryTransformer transformVisitor = new HqlQueryTransformer();
-		transformVisitor.visit(parsedQuery);
-		return transformVisitor.getAlias();
-	}
-
-	/**
-	 * Use {@link HqlQueryTransformer} to find the projection of the query.
-	 *
-	 * @param parsedQuery
-	 * @return
-	 */
-	@Override
-	protected List<JpaQueryParsingToken> doFindProjection(ParserRuleContext parsedQuery) {
-
-		HqlQueryTransformer transformVisitor = new HqlQueryTransformer();
-		transformVisitor.visit(parsedQuery);
-		return transformVisitor.getProjection();
-	}
-
-	/**
-	 * Use {@link HqlQueryTransformer} to detect if the query uses a {@code new com.example.Dto()} DTO constructor in the
-	 * primary select clause.
-	 *
-	 * @param parsedQuery
-	 * @return Guaranteed to be {@literal true} or {@literal false}.
-	 */
-	@Override
-	protected boolean doCheckForConstructor(ParserRuleContext parsedQuery) {
-
-		HqlQueryTransformer transformVisitor = new HqlQueryTransformer();
-		transformVisitor.visit(parsedQuery);
-		return transformVisitor.hasConstructorExpression();
-	}
 }

@@ -20,6 +20,7 @@ import java.util.List;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
+
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.Nullable;
 
@@ -28,12 +29,13 @@ import org.springframework.lang.Nullable;
  * {@link EqlParser} and {@link EqlQueryTransformer}.
  *
  * @author Greg Turnquist
+ * @author Mark Paluch
  * @since 3.2
  */
 class EqlQueryParser extends JpaQueryParserSupport {
 
 	EqlQueryParser(String query) {
-		super(query);
+		super(parseQuery(query), new EqlQueryIntrospector());
 	}
 
 	/**
@@ -50,16 +52,6 @@ class EqlQueryParser extends JpaQueryParserSupport {
 		configureParser(query, lexer, parser);
 
 		return parser.start();
-	}
-
-	/**
-	 * Parse the query using {@link #parseQuery(String)}.
-	 *
-	 * @return a parsed query
-	 */
-	@Override
-	protected ParserRuleContext parse(String query) {
-		return parseQuery(query);
 	}
 
 	/**
@@ -87,46 +79,4 @@ class EqlQueryParser extends JpaQueryParserSupport {
 		return new EqlQueryTransformer(true, countProjection).visit(parsedQuery);
 	}
 
-	/**
-	 * Run the parsed query through {@link EqlQueryTransformer} to find the primary FROM clause's alias.
-	 *
-	 * @param parsedQuery
-	 * @return can be {@literal null}
-	 */
-	@Override
-	protected String doFindAlias(ParserRuleContext parsedQuery) {
-
-		EqlQueryTransformer transformVisitor = new EqlQueryTransformer();
-		transformVisitor.visit(parsedQuery);
-		return transformVisitor.getAlias();
-	}
-
-	/**
-	 * Use {@link EqlQueryTransformer} to find the projection of the query.
-	 *
-	 * @param parsedQuery
-	 * @return
-	 */
-	@Override
-	protected List<JpaQueryParsingToken> doFindProjection(ParserRuleContext parsedQuery) {
-
-		EqlQueryTransformer transformVisitor = new EqlQueryTransformer();
-		transformVisitor.visit(parsedQuery);
-		return transformVisitor.getProjection();
-	}
-
-	/**
-	 * Use {@link EqlQueryTransformer} to detect if the query uses a {@code new com.example.Dto()} DTO constructor in the
-	 * primary select clause.
-	 *
-	 * @param parsedQuery
-	 * @return Guaranteed to be {@literal true} or {@literal false}.
-	 */
-	@Override
-	protected boolean doCheckForConstructor(ParserRuleContext parsedQuery) {
-
-		EqlQueryTransformer transformVisitor = new EqlQueryTransformer();
-		transformVisitor.visit(parsedQuery);
-		return transformVisitor.hasConstructorExpression();
-	}
 }
