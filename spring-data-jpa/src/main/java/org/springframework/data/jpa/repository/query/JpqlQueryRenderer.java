@@ -646,14 +646,18 @@ class JpqlQueryRenderer extends JpqlBaseVisitor<List<JpaQueryParsingToken>> {
 		List<JpaQueryParsingToken> tokens = new ArrayList<>();
 
 		tokens.addAll(visit(ctx.select_expression()));
-		SPACE(tokens);
 
-		if (ctx.AS() != null) {
-			tokens.add(new JpaQueryParsingToken(ctx.AS()));
-		}
+		if (ctx.AS() != null || ctx.result_variable() != null) {
 
-		if (ctx.result_variable() != null) {
-			tokens.addAll(visit(ctx.result_variable()));
+			SPACE(tokens);
+
+			if (ctx.AS() != null) {
+				tokens.add(new JpaQueryParsingToken(ctx.AS()));
+			}
+
+			if (ctx.result_variable() != null) {
+				tokens.addAll(visit(ctx.result_variable()));
+			}
 		}
 
 		return tokens;
@@ -2164,7 +2168,7 @@ class JpqlQueryRenderer extends JpqlBaseVisitor<List<JpaQueryParsingToken>> {
 			tokens.add(new JpaQueryParsingToken(ctx.INTLITERAL()));
 		} else if (ctx.FLOATLITERAL() != null) {
 			tokens.add(new JpaQueryParsingToken(ctx.FLOATLITERAL()));
-		} else if(ctx.LONGLITERAL() != null) {
+		} else if (ctx.LONGLITERAL() != null) {
 			tokens.add(new JpaQueryParsingToken(ctx.LONGLITERAL()));
 		} else if (ctx.boolean_literal() != null) {
 			tokens.addAll(visit(ctx.boolean_literal()));
@@ -2226,7 +2230,7 @@ class JpqlQueryRenderer extends JpqlBaseVisitor<List<JpaQueryParsingToken>> {
 			return List.of(new JpaQueryParsingToken(ctx.INTLITERAL()));
 		} else if (ctx.FLOATLITERAL() != null) {
 			return List.of(new JpaQueryParsingToken(ctx.FLOATLITERAL()));
-		} else if(ctx.LONGLITERAL() != null) {
+		} else if (ctx.LONGLITERAL() != null) {
 			return List.of(new JpaQueryParsingToken(ctx.LONGLITERAL()));
 		} else {
 			return List.of();

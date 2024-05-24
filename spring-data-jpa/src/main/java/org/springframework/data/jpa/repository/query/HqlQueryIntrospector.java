@@ -28,7 +28,7 @@ import org.springframework.lang.Nullable;
  *
  * @author Mark Paluch
  */
-@SuppressWarnings("UnreachableCode")
+@SuppressWarnings({ "UnreachableCode", "ConstantValue" })
 class HqlQueryIntrospector extends HqlBaseVisitor<Void> implements ParsedQueryIntrospector {
 
 	private final HqlQueryRenderer renderer = new HqlQueryRenderer();
@@ -57,7 +57,7 @@ class HqlQueryIntrospector extends HqlBaseVisitor<Void> implements ParsedQueryIn
 	public Void visitSelectClause(HqlParser.SelectClauseContext ctx) {
 
 		List<HqlParser.SelectionContext> selections = ctx.selectionList().selection();
-		List<JpaQueryParsingToken> selectItemTokens = new ArrayList<>(selections.size());
+		List<JpaQueryParsingToken> selectItemTokens = new ArrayList<>(selections.size() * 2);
 
 		for (HqlParser.SelectionContext selection : selections) {
 
@@ -80,16 +80,13 @@ class HqlQueryIntrospector extends HqlBaseVisitor<Void> implements ParsedQueryIn
 	@Override
 	public Void visitFromRoot(HqlParser.FromRootContext ctx) {
 
-		HqlParser.VariableContext variable = ctx.variable();
+		if (primaryFromAlias == null && ctx.variable() != null && !HqlQueryRenderer.isSubquery(ctx)) {
 
-		if (variable != null && (ctx.entityName() != null || ctx.subquery() != null)) {
-
-			if (primaryFromAlias == null) {
-				primaryFromAlias = (variable.identifier() != null ? variable.identifier() : variable.reservedWord()).getText();
-			}
+			primaryFromAlias = (ctx.variable().reservedWord() != null ? ctx.variable().reservedWord()
+					: ctx.variable().identifier().reservedWord()).getText();
 		}
 
-		return super.visitFromRoot(ctx);
+		return null;
 	}
 
 	@Override

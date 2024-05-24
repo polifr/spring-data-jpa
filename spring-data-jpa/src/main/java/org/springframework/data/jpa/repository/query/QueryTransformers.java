@@ -51,6 +51,11 @@ class QueryTransformers {
 				skipNext = true;
 				continue;
 			}
+
+			if (!token.isA(TOKEN_COMMA)) {
+				token = new JpaQueryParsingToken(token.getToken(), false);
+			}
+
 			target.add(token);
 		}
 

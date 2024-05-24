@@ -20,6 +20,8 @@ import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken
 import java.util.ArrayList;
 import java.util.List;
 
+import org.antlr.v4.runtime.ParserRuleContext;
+
 /**
  * An ANTLR {@link org.antlr.v4.runtime.tree.ParseTreeVisitor} that renders an HQL query without making any changes.
  *
@@ -29,6 +31,24 @@ import java.util.List;
  */
 @SuppressWarnings({ "ConstantConditions", "DuplicatedCode" })
 class HqlQueryRenderer extends HqlBaseVisitor<List<JpaQueryParsingToken>> {
+
+	/**
+	 * Is this select clause a {@literal subquery}?
+	 *
+	 * @return boolean
+	 */
+	static boolean isSubquery(ParserRuleContext ctx) {
+
+		if (ctx instanceof HqlParser.SubqueryContext) {
+			return true;
+		} else if (ctx instanceof HqlParser.SelectStatementContext) {
+			return false;
+		} else if (ctx instanceof HqlParser.InsertStatementContext) {
+			return false;
+		} else {
+			return isSubquery(ctx.getParent());
+		}
+	}
 
 	@Override
 	public List<JpaQueryParsingToken> visitStart(HqlParser.StartContext ctx) {

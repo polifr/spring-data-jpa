@@ -15,68 +15,30 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import java.util.List;
-
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.ParserRuleContext;
-
-import org.springframework.data.domain.Sort;
-import org.springframework.lang.Nullable;
-
 /**
- * Implements the {@code HQL} parsing operations of a {@link JpaQueryParserSupport} using the ANTLR-generated
- * {@link HqlParser} and {@link HqlQueryTransformer}.
+ * Implements the {@code HQL} parsing operations of a {@link JpaQueryParser} using the ANTLR-generated {@link HqlParser}
+ * and {@link HqlSortedQueryTransformer}.
  *
  * @author Greg Turnquist
  * @author Mark Paluch
  * @since 3.1
  */
-class HqlQueryParser extends JpaQueryParserSupport {
+class HqlQueryParser extends JpaQueryParser {
 
-	HqlQueryParser(String query) {
-		super(parseQuery(query), new HqlQueryIntrospector());
+	private HqlQueryParser(String query) {
+		super(parse(query, HqlLexer::new, HqlParser::new, HqlParser::start), new HqlQueryIntrospector(),
+				HqlSortedQueryTransformer::new, HqlCountQueryTransformer::new);
 	}
 
 	/**
-	 * Convenience method to parse an HQL query. Will throw a {@link BadJpqlGrammarException} if the query is invalid.
+	 * Parse a HQL query.
 	 *
 	 * @param query
-	 * @return a parsed query, ready for postprocessing
+	 * @return the query parser.
+	 * @throws BadJpqlGrammarException
 	 */
-	public static ParserRuleContext parseQuery(String query) {
-
-		HqlLexer lexer = new HqlLexer(CharStreams.fromString(query));
-		HqlParser parser = new HqlParser(new CommonTokenStream(lexer));
-
-		configureParser(query, lexer, parser);
-
-		return parser.start();
-	}
-
-	/**
-	 * Use the {@link HqlQueryTransformer} to transform the original query into a query with the {@link Sort} applied.
-	 *
-	 * @param parsedQuery
-	 * @param sort can be {@literal null}
-	 * @return list of {@link JpaQueryParsingToken}s
-	 */
-	@Override
-	protected List<JpaQueryParsingToken> applySort(ParserRuleContext parsedQuery, Sort sort) {
-		return new HqlQueryTransformer(sort).visit(parsedQuery);
-	}
-
-	/**
-	 * Use the {@link HqlQueryTransformer} to transform the original query into a count query.
-	 *
-	 * @param parsedQuery
-	 * @param countProjection
-	 * @return list of {@link JpaQueryParsingToken}s
-	 */
-	@Override
-	protected List<JpaQueryParsingToken> doCreateCountQuery(ParserRuleContext parsedQuery,
-			@Nullable String countProjection) {
-		return new HqlQueryTransformer(true, countProjection).visit(parsedQuery);
+	public static HqlQueryParser parseQuery(String query) throws BadJpqlGrammarException {
+		return new HqlQueryParser(query);
 	}
 
 }

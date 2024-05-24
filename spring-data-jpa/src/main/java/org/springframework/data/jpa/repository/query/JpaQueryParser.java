@@ -18,11 +18,18 @@ package org.springframework.data.jpa.repository.query;
 import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken.*;
 
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.atn.PredictionMode;
+import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.Nullable;
@@ -34,20 +41,37 @@ import org.springframework.lang.Nullable;
  * @author Mark Paluch
  * @since 3.1
  */
-abstract class JpaQueryParserSupport {
+abstract class JpaQueryParser {
 
 	private final ParserRuleContext context;
 	private final ParsedQueryIntrospector introspector;
 	private final String projection;
+	private final BiFunction<Sort, String, ParseTreeVisitor<List<JpaQueryParsingToken>>> sortFunction;
+	private final BiFunction<String, String, ParseTreeVisitor<List<JpaQueryParsingToken>>> countQueryFunction;
 
-	JpaQueryParserSupport(ParserRuleContext context, ParsedQueryIntrospector introspector) {
+	JpaQueryParser(ParserRuleContext context, ParsedQueryIntrospector introspector,
+			@Nullable BiFunction<Sort, String, ParseTreeVisitor<List<JpaQueryParsingToken>>> sortFunction,
+			@Nullable BiFunction<String, String, ParseTreeVisitor<List<JpaQueryParsingToken>>> countQueryFunction) {
 
 		this.context = context;
 		this.introspector = introspector;
+		this.sortFunction = sortFunction;
+		this.countQueryFunction = countQueryFunction;
 		this.introspector.visit(context);
 
 		List<JpaQueryParsingToken> tokens = introspector.getProjection();
 		this.projection = tokens.isEmpty() ? "" : render(tokens);
+	}
+
+	static <P extends Parser> ParserRuleContext parse(String query, Function<CharStream, Lexer> lexerFactoryFunction,
+			Function<TokenStream, P> parserFactoryFunction, Function<P, ParserRuleContext> parseFunction) {
+
+		Lexer lexer = lexerFactoryFunction.apply(CharStreams.fromString(query));
+		P parser = parserFactoryFunction.apply(new CommonTokenStream(lexer));
+
+		configureParser(query, lexer, parser);
+
+		return parseFunction.apply(parser);
 	}
 
 	/**
@@ -57,26 +81,16 @@ abstract class JpaQueryParserSupport {
 	 * @param sort can be {@literal null}
 	 */
 	String renderSortedQuery(Sort sort) {
-
-		try {
-			return render(applySort(context, sort));
-		} catch (BadJpqlGrammarException e) {
-			throw new IllegalArgumentException(e);
-		}
+		return render(sortFunction.apply(sort, findAlias()).visit(context));
 	}
 
 	/**
-	 * Generate a count-based query using the original query.
+	 * Generate a count-based query derived from the original query.
 	 *
 	 * @param countProjection
 	 */
 	String createCountQuery(@Nullable String countProjection) {
-
-		try {
-			return render(doCreateCountQuery(context, countProjection));
-		} catch (BadJpqlGrammarException e) {
-			throw new IllegalArgumentException(e);
-		}
+		return render(countQueryFunction.apply(countProjection, findAlias()).visit(context));
 	}
 
 	/**
@@ -124,23 +138,5 @@ abstract class JpaQueryParserSupport {
 		parser.removeErrorListeners();
 		parser.addErrorListener(errorListener);
 	}
-
-	/**
-	 * Create a {@link JpaQueryParsingToken}-based query with an {@literal order by} applied/amended based upon the
-	 * {@link Sort} parameter.
-	 *
-	 * @param parsedQuery
-	 * @param sort can be {@literal null}
-	 */
-	protected abstract List<JpaQueryParsingToken> applySort(ParserRuleContext parsedQuery, Sort sort);
-
-	/**
-	 * Create a {@link JpaQueryParsingToken}-based count query.
-	 *
-	 * @param parsedQuery
-	 * @param countProjection
-	 */
-	protected abstract List<JpaQueryParsingToken> doCreateCountQuery(ParserRuleContext parsedQuery,
-			@Nullable String countProjection);
 
 }

@@ -15,8 +15,9 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Transformational operations needed to support either {@link HqlQueryTransformer} or {@link JpqlQueryTransformer}.
- * 
+ * Transformational operations needed to support either {@link HqlSortedQueryTransformer} or
+ * {@link JpqlSortedQueryTransformer}.
+ *
  * @author Greg Turnquist
  * @author Donghun Shin
  * @since 3.1
@@ -47,7 +48,7 @@ class JpaQueryTransformerSupport {
 	/**
 	 * Using the primary {@literal FROM} clause's alias and a {@link Sort}, construct all the {@literal ORDER BY}
 	 * arguments.
-	 * 
+	 *
 	 * @param primaryFromAlias
 	 * @param sort
 	 * @return
@@ -98,7 +99,7 @@ class JpaQueryTransformerSupport {
 	/**
 	 * Using the {@code primaryFromAlias} and the {@link org.springframework.data.domain.Sort.Order}, construct a suitable
 	 * argument to be added to an {@literal ORDER BY} expression.
-	 * 
+	 *
 	 * @param primaryFromAlias
 	 * @param order
 	 * @return
