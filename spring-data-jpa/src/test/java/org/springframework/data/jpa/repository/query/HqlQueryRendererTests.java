@@ -968,6 +968,10 @@ class HqlQueryRendererTests {
 		parseWithoutChanges("select p " + //
 				"from Person p " + //
 				"where p.name like 'Joe'");
+
+		parseWithoutChanges("select p " + //
+				"from Person p " + //
+				"where p.name ilike 'Joe'");
 		parseWithoutChanges("select p " + //
 				"from Person p " + //
 				"where p.name like 'Joe''s'");
@@ -1358,7 +1362,8 @@ class HqlQueryRendererTests {
 				"	sum(c.duration), " + //
 				"	min(c.duration), " + //
 				"	max(c.duration), " + //
-				"	avg(c.duration)" + //
+				"	avg(c.duration)," + //
+				"	1" + //
 				")  " + //
 				"from Call c ");
 		parseWithoutChanges("select new map(" + //
@@ -1448,6 +1453,12 @@ class HqlQueryRendererTests {
 				"join c.phone p " + //
 				"order by p.number " + //
 				"fetch first 50 rows only");
+		parseWithoutChanges("select c " + //
+				"from Call c " + //
+				"join c.phone p " + //
+				"order by p.number " + //
+				"offset 10 rows " + //
+				"fetch first 50 rows with ties");
 		parseWithoutChanges("select p " + //
 				"from Phone p " + //
 				"join fetch p.calls " + //

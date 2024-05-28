@@ -717,9 +717,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		if (ctx.parameterOrIntegerLiteral() != null) {
 			builder.append(visit(ctx.parameterOrIntegerLiteral()));
 		} else if (ctx.parameterOrNumberLiteral() != null) {
-
 			builder.append(visit(ctx.parameterOrNumberLiteral()));
-			builder.append(TOKEN_PERCENT);
 		}
 
 		if (ctx.ROW() != null) {
@@ -1620,7 +1618,6 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		}
 
 		nested.appendInline(QueryRendererBuilder.concatExpressions(trees, this::visit, TOKEN_NONE));
-
 		nested.append(TOKEN_CLOSE_PAREN);
 
 		builder.appendInline(nested);

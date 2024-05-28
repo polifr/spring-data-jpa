@@ -694,9 +694,11 @@ class HqlQueryTransformerTests {
 
 		// partition by + order by in over clause
 		assertThat(
-				createQueryFor("select dense_rank() over (partition by active, age order by lastname) from user u", sort))
+				createQueryFor(
+						"select dense_rank() over (partition by active, age order by lastname range between 1.0 preceding and 1.0 following) from user u",
+						sort))
 				.isEqualTo(
-						"select dense_rank() over (partition by active, age order by lastname) from user u order by u.age desc");
+						"select dense_rank() over (partition by active, age order by lastname range between 1.0 preceding and 1.0 following) from user u order by u.age desc");
 
 		// partition by + order by in over clause + order by at the end
 		assertThat(createQueryFor(
