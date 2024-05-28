@@ -66,7 +66,7 @@ class HqlQueryIntrospector extends HqlBaseVisitor<Void> implements ParsedQueryIn
 				selectItemTokens.add(TOKEN_COMMA);
 			}
 
-			selectItemTokens.addAll(renderer.visitSelection(selection));
+			selectItemTokens.add(new JpaQueryParsingToken(renderer.visitSelection(selection).build().render(), false));
 		}
 
 		if (!projectionProcessed) {

@@ -30,11 +30,7 @@ class JpaQueryTransformerSupport {
 			+ "aliases used in the select clause; If you really want to use something other than that for sorting, please use "
 			+ "JpaSort.unsafe(…)";
 
-	private Set<String> projectionAliases;
-
-	JpaQueryTransformerSupport() {
-		this.projectionAliases = new HashSet<>();
-	}
+	private final Set<String> projectionAliases = new HashSet<>();
 
 	/**
 	 * Register an {@literal alias} so it can later be evaluated when applying {@link Sort}s.
@@ -65,7 +61,7 @@ class JpaQueryTransformerSupport {
 				tokens.add(TOKEN_LOWER_FUNC);
 			}
 
-			tokens.add(new JpaQueryParsingToken(() -> generateOrderByArgument(primaryFromAlias, order)));
+			tokens.add(JpaQueryParsingToken.expression(generateOrderByArgument(primaryFromAlias, order)));
 
 			if (order.isIgnoreCase()) {
 				NOSPACE(tokens);
@@ -75,6 +71,47 @@ class JpaQueryTransformerSupport {
 			tokens.add(TOKEN_COMMA);
 		});
 		CLIP(tokens);
+
+		return tokens;
+	}
+
+	/**
+	 * Using the primary {@literal FROM} clause's alias and a {@link Sort}, construct all the {@literal ORDER BY}
+	 * arguments.
+	 *
+	 * @param primaryFromAlias
+	 * @param sort
+	 * @return
+	 */
+	List<JpaQueryParsingToken> orderBy(String primaryFromAlias, Sort sort) {
+
+		List<JpaQueryParsingToken> tokens = new ArrayList<>();
+
+		sort.forEach(order -> {
+
+			checkSortExpression(order);
+
+			StringBuilder builder = new StringBuilder();
+
+			if (order.isIgnoreCase()) {
+				builder.append(TOKEN_LOWER_FUNC.getToken());
+			}
+
+			builder.append(generateOrderByArgument(primaryFromAlias, order));
+
+			if (order.isIgnoreCase()) {
+				builder.append(TOKEN_CLOSE_PAREN);
+			}
+			builder.append(" ");
+
+			builder.append(order.isDescending() ? TOKEN_DESC : TOKEN_ASC);
+
+			if (!tokens.isEmpty()) {
+				tokens.add(TOKEN_COMMA);
+			}
+
+			tokens.add(JpaQueryParsingToken.token(builder.toString()));
+		});
 
 		return tokens;
 	}
@@ -121,7 +158,7 @@ class JpaQueryTransformerSupport {
 	 * @param primaryFromAlias
 	 * @return boolean whether or not to apply the primary FROM clause's alias as a prefix
 	 */
-	private boolean shouldPrefixWithAlias(Sort.Order order, String primaryFromAlias) {
+	private boolean shouldPrefixWithAlias(Sort.Order order, @Nullable String primaryFromAlias) {
 
 		// If there is no primary alias
 		if (ObjectUtils.isEmpty(primaryFromAlias)) {

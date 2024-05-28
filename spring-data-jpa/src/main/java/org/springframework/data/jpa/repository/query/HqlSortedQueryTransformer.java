@@ -17,10 +17,10 @@ package org.springframework.data.jpa.repository.query;
 
 import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.query.QueryRenderer.QueryRendererBuilder;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -47,83 +47,91 @@ class HqlSortedQueryTransformer extends HqlQueryRenderer {
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitOrderedQuery(HqlParser.OrderedQueryContext ctx) {
+	public QueryRendererBuilder visitOrderedQuery(HqlParser.OrderedQueryContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = new ArrayList<>(128);
+		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.query() != null) {
-			tokens.addAll(visit(ctx.query()));
+			builder.append(visit(ctx.query()));
 		} else if (ctx.queryExpression() != null) {
 
-			tokens.add(TOKEN_OPEN_PAREN);
-			tokens.addAll(visit(ctx.queryExpression()));
-			tokens.add(TOKEN_CLOSE_PAREN);
+			builder.append(TOKEN_OPEN_PAREN);
+			builder.appendInline(visit(ctx.queryExpression()));
+			builder.append(TOKEN_CLOSE_PAREN);
 		}
 
 		if (!isSubquery(ctx)) {
 
 			if (ctx.queryOrder() != null) {
-				tokens.addAll(visit(ctx.queryOrder()));
+				QueryRendererBuilder existingOrder = visit(ctx.queryOrder());
+				if (sort.isSorted()) {
+					builder.appendInline(existingOrder);
+				} else {
+					builder.append(existingOrder);
+				}
 			}
 
 			if (sort.isSorted()) {
 
+				List<JpaQueryParsingToken> sortBy = transformerSupport.orderBy(primaryFromAlias, sort);
+
 				if (ctx.queryOrder() != null) {
 
-					NOSPACE(tokens);
-					tokens.add(TOKEN_COMMA);
+					QueryRendererBuilder extension = QueryRenderer.builder().append(TOKEN_COMMA).append(sortBy);
+
+					builder.appendInline(extension);
 				} else {
-
-					SPACE(tokens);
-					tokens.add(TOKEN_ORDER_BY);
+					builder.append(TOKEN_ORDER_BY);
+					builder.append(sortBy);
 				}
-
-				tokens.addAll(transformerSupport.generateOrderByArguments(primaryFromAlias, sort));
 			}
 		} else {
 
 			if (ctx.queryOrder() != null) {
-				tokens.addAll(visit(ctx.queryOrder()));
+				builder.append(visit(ctx.queryOrder()));
 			}
 		}
 
-		return tokens;
+		return builder;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitJoinPath(HqlParser.JoinPathContext ctx) {
+	public QueryRendererBuilder visitJoinPath(HqlParser.JoinPathContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = super.visitJoinPath(ctx);
+		QueryRendererBuilder builder = super.visitJoinPath(ctx);
 
 		if (ctx.variable() != null) {
+			List<JpaQueryParsingToken> tokens = builder.build().stream().toList();
 			transformerSupport.registerAlias(tokens.get(tokens.size() - 1).getToken());
 		}
 
-		return tokens;
+		return builder;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitJoinSubquery(HqlParser.JoinSubqueryContext ctx) {
+	public QueryRendererBuilder visitJoinSubquery(HqlParser.JoinSubqueryContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = super.visitJoinSubquery(ctx);
+		QueryRendererBuilder builder = super.visitJoinSubquery(ctx);
 
 		if (ctx.variable() != null) {
+			List<JpaQueryParsingToken> tokens = builder.build().stream().toList();
 			transformerSupport.registerAlias(tokens.get(tokens.size() - 1).getToken());
 		}
 
-		return tokens;
+		return builder;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitVariable(HqlParser.VariableContext ctx) {
+	public QueryRendererBuilder visitVariable(HqlParser.VariableContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = super.visitVariable(ctx);
+		QueryRendererBuilder builder = super.visitVariable(ctx);
 
 		if (ctx.identifier() != null) {
+			List<JpaQueryParsingToken> tokens = builder.build().stream().toList();
 			transformerSupport.registerAlias(tokens.get(tokens.size() - 1).getToken());
 		}
 
-		return tokens;
+		return builder;
 	}
 
 }

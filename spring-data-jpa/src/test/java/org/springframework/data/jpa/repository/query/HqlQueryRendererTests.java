@@ -16,7 +16,6 @@
 package org.springframework.data.jpa.repository.query;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken.*;
 
 import java.util.stream.Stream;
 
@@ -56,7 +55,7 @@ class HqlQueryRendererTests {
 
 		HqlParser.StartContext parsedQuery = parser.start();
 
-		return render(new HqlQueryRenderer().visit(parsedQuery));
+		return new HqlQueryRenderer().visit(parsedQuery).build().render();
 	}
 
 	static Stream<Arguments> reservedWords() {
@@ -278,7 +277,7 @@ class HqlQueryRendererTests {
 
 		assertQuery("""
 				SELECT DISTINCT o
-				FROM Order o , IN(o.lineItems) l
+				FROM Order o , IN (o.lineItems) l
 				WHERE l.product.productType = 'office_supplies'
 				""");
 	}
@@ -438,7 +437,7 @@ class HqlQueryRendererTests {
 		assertQuery("""
 				SELECT goodCustomer
 				FROM Customer goodCustomer
-				WHERE goodCustomer.balanceOwed < (SELECT AVG(c.balanceOwed)/2.0 FROM Customer c)
+				WHERE goodCustomer.balanceOwed < (SELECT AVG(c.balanceOwed) / 2.0 FROM Customer c)
 				""");
 	}
 
@@ -483,9 +482,9 @@ class HqlQueryRendererTests {
 		assertQuery("""
 				UPDATE Employee e
 				SET e.salary =
-					CASE WHEN e.rating = 1 THEN e.salary*1.1
-				         WHEN e.rating = 2 THEN e.salary*1.05
-				         ELSE e.salary*1.01
+					CASE WHEN e.rating = 1 THEN e.salary * 1.1
+				         WHEN e.rating = 2 THEN e.salary * 1.05
+				         ELSE e.salary * 1.01
 				    END
 				    """);
 	}
@@ -496,9 +495,9 @@ class HqlQueryRendererTests {
 		assertQuery("""
 				UPDATE Employee e
 				SET e.salary =
-				    CASE e.rating WHEN 1 THEN e.salary*1.1
-				                  WHEN 2 THEN e.salary*1.05
-				                  ELSE e.salary*1.01
+				    CASE e.rating WHEN 1 THEN e.salary * 1.1
+				                  WHEN 2 THEN e.salary * 1.05
+				                  ELSE e.salary * 1.01
 				    END
 				    """);
 	}
@@ -753,7 +752,7 @@ class HqlQueryRendererTests {
 	void theRest21() {
 
 		assertQuery("""
-				SELECT o.quantity, o.cost*1.08 AS taxedCost, a.zipcode
+				SELECT o.quantity, o.cost * 1.08 AS taxedCost, a.zipcode
 				FROM Customer c JOIN c.orders o JOIN c.address a
 				WHERE a.state = 'CA' AND a.county = 'Santa Clara'
 				ORDER BY o.quantity, taxedCost, a.zipcode
@@ -791,7 +790,7 @@ class HqlQueryRendererTests {
 
 		assertQuery("""
 				SELECT p.product_name
-				FROM Order o , IN(o.lineItems) l JOIN o.customer c
+				FROM Order o , IN (o.lineItems) l JOIN o.customer c
 				WHERE c.lastname = 'Smith' AND c.firstname = 'John'
 				ORDER BY o.quantity
 				""");
@@ -1501,10 +1500,9 @@ class HqlQueryRendererTests {
 	void cteWithClauseShouldWork() {
 
 		assertQuery("""
-				WITH maxId AS(select max(sr.snapshot.id) snapshotId from SnapshotReference sr
+				WITH maxId AS (select max(sr.snapshot.id) snapshotId from SnapshotReference sr
 					where sr.id.selectionId = ?1 and sr.enabled
-					group by sr.userId
-					)
+					group by sr.userId)
 				select sr from maxId m join SnapshotReference sr on sr.snapshot.id = m.snapshotId
 				""");
 	}
@@ -1647,15 +1645,15 @@ class HqlQueryRendererTests {
 
 	@ParameterizedTest // GH-3342
 	@ValueSource(
-			strings = { "select 1 from User", "select -1 from User", "select +1 from User", "select +1*-100 from User",
-					"select count(u)*-0.7f from User u", "select count(oi) + (-100) as perc from StockOrderItem oi",
+			strings = { "select 1 from User", "select -1 from User", "select +1 from User", "select +1 * -100 from User",
+					"select count(u) * -0.7f from User u", "select count(oi) + (-100) as perc from StockOrderItem oi",
 					"select p from Payment p where length(p.cardNumber) between +16 and -20" })
 	void signedLiteralShouldWork(String query) {
 		assertQuery(query);
 	}
 
 	@ParameterizedTest // GH-3342
-	@ValueSource(strings = { "select -count(u) from User u", "select +1*(-count(u)) from User u" })
+	@ValueSource(strings = { "select -count(u) from User u", "select +1 * (-count(u)) from User u" })
 	void signedExpressionsShouldWork(String query) {
 		assertQuery(query);
 	}

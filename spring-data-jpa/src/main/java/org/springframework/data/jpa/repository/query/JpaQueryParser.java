@@ -46,12 +46,12 @@ abstract class JpaQueryParser {
 	private final ParserRuleContext context;
 	private final ParsedQueryIntrospector introspector;
 	private final String projection;
-	private final BiFunction<Sort, String, ParseTreeVisitor<List<JpaQueryParsingToken>>> sortFunction;
-	private final BiFunction<String, String, ParseTreeVisitor<List<JpaQueryParsingToken>>> countQueryFunction;
+	private final BiFunction<Sort, String, ParseTreeVisitor<? extends Object>> sortFunction;
+	private final BiFunction<String, String, ParseTreeVisitor<? extends Object>> countQueryFunction;
 
 	JpaQueryParser(ParserRuleContext context, ParsedQueryIntrospector introspector,
-			@Nullable BiFunction<Sort, String, ParseTreeVisitor<List<JpaQueryParsingToken>>> sortFunction,
-			@Nullable BiFunction<String, String, ParseTreeVisitor<List<JpaQueryParsingToken>>> countQueryFunction) {
+			@Nullable BiFunction<Sort, String, ParseTreeVisitor<? extends Object>> sortFunction,
+			@Nullable BiFunction<String, String, ParseTreeVisitor<? extends Object>> countQueryFunction) {
 
 		this.context = context;
 		this.introspector = introspector;

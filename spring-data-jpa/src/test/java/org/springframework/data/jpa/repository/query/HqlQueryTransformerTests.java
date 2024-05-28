@@ -197,10 +197,10 @@ class HqlQueryTransformerTests {
 		assertThat(alias("select u from User u where not exists (select u2 from User u2)")).isEqualTo("u");
 		assertThat(alias(
 				"select u from User u where not exists (select u2 from User u2 where not exists (select u3 from User u3))"))
-						.isEqualTo("u");
+				.isEqualTo("u");
 		assertThat(alias(
 				"SELECT e FROM DbEvent e WHERE TREAT(modifiedFrom AS date) IS NULL OR e.modificationDate >= :modifiedFrom"))
-						.isEqualTo("e");
+				.isEqualTo("e");
 	}
 
 	@Test // GH-2557
@@ -371,7 +371,7 @@ class HqlQueryTransformerTests {
 						from Bar lp join lp.investmentProduct ip
 						where (lp.toDate is null and lp.fromDate <= :now and lp.fromDate is not null) and lp.accountId = :accountId group by ip.id, ip.name, lp.accountId
 						order by ip.name ASC"""))
-						.isTrue();
+				.isTrue();
 	}
 
 	@Test // DATAJPA-938
@@ -693,15 +693,16 @@ class HqlQueryTransformerTests {
 				.isEqualTo("select dense_rank() over (order by lastname) from user u order by u.lastname, u.age desc");
 
 		// partition by + order by in over clause
-		assertThat(createQueryFor("select dense_rank() over (partition by active, age order by lastname) from user u",
-				sort)).isEqualTo(
+		assertThat(
+				createQueryFor("select dense_rank() over (partition by active, age order by lastname) from user u", sort))
+				.isEqualTo(
 						"select dense_rank() over (partition by active, age order by lastname) from user u order by u.age desc");
 
 		// partition by + order by in over clause + order by at the end
 		assertThat(createQueryFor(
 				"select dense_rank() over (partition by active, age order by lastname) from user u order by active", sort))
-						.isEqualTo(
-								"select dense_rank() over (partition by active, age order by lastname) from user u order by active, u.age desc");
+				.isEqualTo(
+						"select dense_rank() over (partition by active, age order by lastname) from user u order by active, u.age desc");
 
 		// partition by + order by in over clause + frame clause
 		assertThat(createQueryFor(
@@ -726,13 +727,13 @@ class HqlQueryTransformerTests {
 
 		// order by in subselect (from expression)
 		assertThat(createQueryFor("select u from (select u2 from user u2 order by age desc limit 10) u", sort))
-				.isEqualTo("select u from (select u2 from user u2 order by age desc limit 10 ) u order by u.age desc");
+				.isEqualTo("select u from (select u2 from user u2 order by age desc limit 10) u order by u.age desc");
 
 		// order by in subselect (from expression) + at the end
 		assertThat(createQueryFor(
 				"select u from (select u2 from user u2 order by 1, 2, 3 desc limit 10) u order by u.active asc", sort))
-						.isEqualTo(
-								"select u from (select u2 from user u2 order by 1, 2, 3 desc limit 10 ) u order by u.active asc, u.age desc");
+				.isEqualTo(
+						"select u from (select u2 from user u2 order by 1, 2, 3 desc limit 10) u order by u.active asc, u.age desc");
 	}
 
 	@Test // GH-2511
@@ -743,7 +744,7 @@ class HqlQueryTransformerTests {
 
 		assertThat(
 				createCountQueryFor("SELECT e FROM mytable e WHERE nr = :number AND kon = :kon AND datum >= '2019-01-01'"))
-						.isEqualTo("SELECT count(e) FROM mytable e WHERE nr = :number AND kon = :kon AND datum >= '2019-01-01'");
+				.isEqualTo("SELECT count(e) FROM mytable e WHERE nr = :number AND kon = :kon AND datum >= '2019-01-01'");
 
 		assertThat(createCountQueryFor("SELECT e FROM context e ORDER BY time"))
 				.isEqualTo("SELECT count(e) FROM context e");
@@ -753,7 +754,7 @@ class HqlQueryTransformerTests {
 
 		assertThat(
 				createCountQueryFor("SELECT us FROM users_statuses us WHERE (user_created_at BETWEEN :fromDate AND :toDate)"))
-						.isEqualTo("SELECT count(us) FROM users_statuses us WHERE (user_created_at BETWEEN :fromDate AND :toDate)");
+				.isEqualTo("SELECT count(us) FROM users_statuses us WHERE (user_created_at BETWEEN :fromDate AND :toDate)");
 	}
 
 	@Test // GH-2496, GH-2522, GH-2537, GH-2045
@@ -951,7 +952,7 @@ class HqlQueryTransformerTests {
 				""", Sort.by(Sort.Direction.ASC, "cheapestBundlePrice") //
 				.and(Sort.by(Sort.Direction.ASC, "earliestBundleStart")) //
 				.and(Sort.by(Sort.Direction.ASC, "name"))))
-						.endsWith(" order by cheapestBundlePrice asc, earliestBundleStart asc, name asc");
+				.endsWith(" order by cheapestBundlePrice asc, earliestBundleStart asc, name asc");
 	}
 
 	@Test // GH-2863, GH-1655
@@ -1017,8 +1018,7 @@ class HqlQueryTransformerTests {
 
 		assertThat(
 				createQueryFor("select e from Employee e where e.name = :name", Sort.by(Sort.Order.desc("evaluationDate"))))
-						.isEqualToIgnoringWhitespace(
-								"select e from Employee e where e.name = :name order by e.evaluationDate desc");
+				.isEqualToIgnoringWhitespace("select e from Employee e where e.name = :name order by e.evaluationDate desc");
 
 		assertThat(createQueryFor("select e from Employee e join training t where e.name = :name",
 				Sort.by(Sort.Order.desc("trainingDueDate")))).isEqualToIgnoringWhitespace(
@@ -1040,13 +1040,15 @@ class HqlQueryTransformerTests {
 	@Test // GH-3269
 	void createsCountQueryUsingAliasCorrectly() {
 
-		assertCountQuery("select distinct 1 as x from Employee","select count(distinct 1) from Employee AS __");
-		assertCountQuery("SELECT DISTINCT abc AS x FROM T","SELECT count(DISTINCT abc) FROM T AS __");
+		assertCountQuery("select distinct 1 as x from Employee", "select count(distinct 1) from Employee AS __");
+		assertCountQuery("SELECT DISTINCT abc AS x FROM T", "SELECT count(DISTINCT abc) FROM T AS __");
 		assertCountQuery("select distinct a as x, b as y from Employee", "select count(distinct a, b) from Employee AS __");
-		assertCountQuery("select distinct sum(amount) as x from Employee GROUP BY n","select count(distinct sum(amount)) from Employee AS __ GROUP BY n");
+		assertCountQuery("select distinct sum(amount) as x from Employee GROUP BY n",
+				"select count(distinct sum(amount)) from Employee AS __ GROUP BY n");
 		assertCountQuery("select distinct a, b, sum(amount) as c, d from Employee GROUP BY n",
 				"select count(distinct a, b, sum(amount), d) from Employee AS __ GROUP BY n");
-		assertCountQuery("select distinct a, count(b) as c from Employee GROUP BY n","select count(distinct a, count(b)) from Employee AS __ GROUP BY n");
+		assertCountQuery("select distinct a, count(b) as c from Employee GROUP BY n",
+				"select count(distinct a, count(b)) from Employee AS __ GROUP BY n");
 	}
 
 	private void assertCountQuery(String originalQuery, String countQuery) {

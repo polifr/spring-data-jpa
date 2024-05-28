@@ -17,9 +17,9 @@ package org.springframework.data.jpa.repository.query;
 
 import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.jpa.repository.query.QueryRenderer.QueryRendererBuilder;
 import org.springframework.lang.Nullable;
 
 /**
@@ -43,195 +43,208 @@ class HqlCountQueryTransformer extends HqlQueryRenderer {
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitOrderedQuery(HqlParser.OrderedQueryContext ctx) {
+	public QueryRendererBuilder visitOrderedQuery(HqlParser.OrderedQueryContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = newArrayList();
+		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.query() != null) {
-			tokens.addAll(visit(ctx.query()));
+			builder.append(visit(ctx.query()));
 		} else if (ctx.queryExpression() != null) {
 
-			tokens.add(TOKEN_OPEN_PAREN);
-			tokens.addAll(visit(ctx.queryExpression()));
-			tokens.add(TOKEN_CLOSE_PAREN);
+			QueryRendererBuilder nested = QueryRenderer.builder();
+			nested.append(TOKEN_OPEN_PAREN);
+			nested.appendInline(visit(ctx.queryExpression()));
+			nested.append(TOKEN_CLOSE_PAREN);
+
+			builder.appendExpression(nested);
 		}
 
 		if (ctx.queryOrder() != null) {
-			tokens.addAll(visit(ctx.queryOrder()));
+			builder.append(visit(ctx.queryOrder()));
 		}
 
-		return tokens;
+		return builder;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitFromQuery(HqlParser.FromQueryContext ctx) {
+	public QueryRendererBuilder visitFromQuery(HqlParser.FromQueryContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = newArrayList();
+		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (!isSubquery(ctx) && ctx.selectClause() == null) {
 
-			tokens.add(TOKEN_SELECT_COUNT);
+			QueryRendererBuilder countBuilder = QueryRenderer.builder();
+			countBuilder.append(TOKEN_SELECT_COUNT);
 
 			if (countProjection != null) {
-				tokens.add(new JpaQueryParsingToken(countProjection));
+				countBuilder.append(new JpaQueryParsingToken(countProjection));
 			} else {
 				if (primaryFromAlias == null) {
-					tokens.add(TOKEN_DOUBLE_UNDERSCORE);
-					NOSPACE(tokens);
+					countBuilder.append(TOKEN_DOUBLE_UNDERSCORE);
 				} else {
-					tokens.add(new JpaQueryParsingToken(primaryFromAlias, false));
+					countBuilder.append(new JpaQueryParsingToken(primaryFromAlias, false));
 				}
-
 			}
 
-			tokens.add(TOKEN_CLOSE_PAREN);
+			countBuilder.append(TOKEN_CLOSE_PAREN);
+
+			builder.appendExpression(countBuilder);
 		}
 
 		if (ctx.fromClause() != null) {
-			tokens.addAll(visit(ctx.fromClause()));
+			builder.appendExpression(visit(ctx.fromClause()));
 		}
 
 		if (ctx.whereClause() != null) {
-			tokens.addAll(visit(ctx.whereClause()));
+			builder.appendExpression(visit(ctx.whereClause()));
 		}
 
 		if (ctx.groupByClause() != null) {
-			tokens.addAll(visit(ctx.groupByClause()));
+			builder.appendExpression(visit(ctx.groupByClause()));
 		}
 
 		if (ctx.havingClause() != null) {
-			tokens.addAll(visit(ctx.havingClause()));
+			builder.appendExpression(visit(ctx.havingClause()));
 		}
 
 		if (ctx.selectClause() != null) {
-			tokens.addAll(visit(ctx.selectClause()));
+			builder.appendExpression(visit(ctx.selectClause()));
 		}
 
-		return tokens;
+		return builder;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitQueryOrder(HqlParser.QueryOrderContext ctx) {
+	public QueryRendererBuilder visitQueryOrder(HqlParser.QueryOrderContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = newArrayList();
+		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.limitClause() != null) {
-			SPACE(tokens);
-			tokens.addAll(visit(ctx.limitClause()));
+			builder.appendExpression(visit(ctx.limitClause()));
 		}
 
 		if (ctx.offsetClause() != null) {
-			tokens.addAll(visit(ctx.offsetClause()));
+			builder.appendExpression(visit(ctx.offsetClause()));
 		}
 
 		if (ctx.fetchClause() != null) {
-			tokens.addAll(visit(ctx.fetchClause()));
+			builder.appendExpression(visit(ctx.fetchClause()));
 		}
 
-		return tokens;
+		return builder;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitFromRoot(HqlParser.FromRootContext ctx) {
+	public QueryRendererBuilder visitFromRoot(HqlParser.FromRootContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = newArrayList();
+		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.entityName() != null) {
 
-			tokens.addAll(visit(ctx.entityName()));
+			builder.appendExpression(visit(ctx.entityName()));
 
 			if (ctx.variable() != null) {
-				tokens.addAll(visit(ctx.variable()));
+				builder.appendExpression(visit(ctx.variable()));
 
 			} else {
 
-				tokens.add(TOKEN_AS);
-				tokens.add(TOKEN_DOUBLE_UNDERSCORE);
+				builder.append(TOKEN_AS);
+				builder.append(TOKEN_DOUBLE_UNDERSCORE);
 			}
 		} else if (ctx.subquery() != null) {
 
 			if (ctx.LATERAL() != null) {
-				tokens.add(new JpaQueryParsingToken(ctx.LATERAL()));
+				builder.append(JpaQueryParsingToken.expression(ctx.LATERAL()));
 			}
-			tokens.add(TOKEN_OPEN_PAREN);
-			tokens.addAll(visit(ctx.subquery()));
-			tokens.add(TOKEN_CLOSE_PAREN);
+
+			QueryRendererBuilder nested = QueryRenderer.builder();
+
+			nested.append(TOKEN_OPEN_PAREN);
+			nested.appendInline(visit(ctx.subquery()));
+			nested.append(TOKEN_CLOSE_PAREN);
+
+			builder.appendExpression(nested);
 
 			if (ctx.variable() != null) {
-				tokens.addAll(visit(ctx.variable()));
+				builder.appendExpression(visit(ctx.variable()));
 			}
 		}
 
-		return tokens;
+		return builder;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitJoin(HqlParser.JoinContext ctx) {
+	public QueryRendererBuilder visitJoin(HqlParser.JoinContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = new ArrayList<>(visit(ctx.joinType()));
-		tokens.add(new JpaQueryParsingToken(ctx.JOIN()));
+		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		tokens.addAll(visit(ctx.joinTarget()));
+		builder.appendExpression(visit(ctx.joinType()));
+		builder.append(JpaQueryParsingToken.expression(ctx.JOIN()));
+
+		builder.appendExpression(visit(ctx.joinTarget()));
 
 		if (ctx.joinRestriction() != null) {
-			tokens.addAll(visit(ctx.joinRestriction()));
+			builder.appendExpression(visit(ctx.joinRestriction()));
 		}
 
-		return tokens;
+		return builder;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitSelectClause(HqlParser.SelectClauseContext ctx) {
+	public QueryRendererBuilder visitSelectClause(HqlParser.SelectClauseContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = newArrayList();
+		QueryRendererBuilder builder = QueryRenderer.builder();
+		builder.append(JpaQueryParsingToken.expression(ctx.SELECT()));
 
-		tokens.add(new JpaQueryParsingToken(ctx.SELECT()));
+		QueryRendererBuilder selectionListbuilder = visit(ctx.selectionList());
 
 		if (!isSubquery(ctx)) {
-			tokens.add(TOKEN_COUNT_FUNC);
+
+			builder.append(TOKEN_COUNT_FUNC);
 
 			if (countProjection != null) {
-				tokens.add(new JpaQueryParsingToken(countProjection));
+				builder.append(JpaQueryParsingToken.token(countProjection));
 			}
-		}
 
-		if (ctx.DISTINCT() != null) {
-			tokens.add(new JpaQueryParsingToken(ctx.DISTINCT()));
-		}
+			QueryRendererBuilder nested = QueryRenderer.builder();
 
-		List<JpaQueryParsingToken> selectionListTokens = visit(ctx.selectionList());
-
-		if (!isSubquery(ctx)) {
+			if (ctx.DISTINCT() != null) {
+				nested.append(JpaQueryParsingToken.expression(ctx.DISTINCT()));
+			}
 
 			if (countProjection == null) {
 
 				if (ctx.DISTINCT() != null) {
 
-					List<JpaQueryParsingToken> countSelection = QueryTransformers.filterCountSelection(selectionListTokens);
+					List<JpaQueryParsingToken> countSelection = QueryTransformers
+							.filterCountSelection(selectionListbuilder.build().stream().toList());
 
 					if (countSelection.stream().anyMatch(hqlToken -> hqlToken.getToken().contains("new"))) {
 						// constructor
-						tokens.add(new JpaQueryParsingToken(primaryFromAlias));
+						nested.append(new JpaQueryParsingToken(primaryFromAlias));
 					} else {
 						// keep all the select items to distinct against
-						tokens.addAll(countSelection);
+						nested.append(countSelection);
 					}
 				} else {
-					tokens.add(new JpaQueryParsingToken(primaryFromAlias));
+					nested.append(new JpaQueryParsingToken(primaryFromAlias));
 				}
 			}
 
-			NOSPACE(tokens);
-			tokens.add(TOKEN_CLOSE_PAREN);
+			builder.appendInline(nested);
+			builder.append(TOKEN_CLOSE_PAREN);
+			builder.current.render();
+
 		} else {
-			tokens.addAll(selectionListTokens);
+
+			if (ctx.DISTINCT() != null) {
+				builder.append(new JpaQueryParsingToken(ctx.DISTINCT()));
+			}
+
+			builder.append(selectionListbuilder);
 		}
 
-		return tokens;
-	}
-
-	static <T> ArrayList<T> newArrayList() {
-		return new ArrayList<>();
+		return builder;
 	}
 
 }
