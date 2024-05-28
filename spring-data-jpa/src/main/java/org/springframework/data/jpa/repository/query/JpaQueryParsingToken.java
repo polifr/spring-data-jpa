@@ -35,7 +35,7 @@ class JpaQueryParsingToken {
 	 * Commonly use tokens.
 	 */
 	public static final JpaQueryParsingToken TOKEN_NONE = JpaQueryParsingToken.token("");
-
+	public static final JpaQueryParsingToken TOKEN_SPACE = JpaQueryParsingToken.token(" ");
 	public static final JpaQueryParsingToken TOKEN_COMMA = JpaQueryParsingToken.token(", ");
 	public static final JpaQueryParsingToken TOKEN_DOT = new JpaQueryParsingToken(".", false);
 	public static final JpaQueryParsingToken TOKEN_EQUALS = JpaQueryParsingToken.token(" = ");
@@ -53,27 +53,15 @@ class JpaQueryParsingToken {
 	public static final JpaQueryParsingToken TOKEN_QUESTION_MARK = new JpaQueryParsingToken("?", false);
 	public static final JpaQueryParsingToken TOKEN_OPEN_BRACE = new JpaQueryParsingToken("{", false);
 	public static final JpaQueryParsingToken TOKEN_CLOSE_BRACE = new JpaQueryParsingToken("}");
-	public static final JpaQueryParsingToken TOKEN_CLOSE_SQUARE_BRACKET_BRACE = new JpaQueryParsingToken("]}");
-	public static final JpaQueryParsingToken TOKEN_CLOSE_PAREN_BRACE = new JpaQueryParsingToken(")}");
-
 	public static final JpaQueryParsingToken TOKEN_DOUBLE_UNDERSCORE = JpaQueryParsingToken.token("__");
-
 	public static final JpaQueryParsingToken TOKEN_AS = JpaQueryParsingToken.expression("AS");
-
 	public static final JpaQueryParsingToken TOKEN_DESC = JpaQueryParsingToken.expression("desc");
-
 	public static final JpaQueryParsingToken TOKEN_ASC = JpaQueryParsingToken.expression("asc");
-
 	public static final JpaQueryParsingToken TOKEN_WITH = JpaQueryParsingToken.expression("WITH");
-
 	public static final JpaQueryParsingToken TOKEN_NOT = JpaQueryParsingToken.expression("NOT");
-
 	public static final JpaQueryParsingToken TOKEN_MATERIALIZED = JpaQueryParsingToken.expression("materialized");
-
 	public static final JpaQueryParsingToken TOKEN_NULLS = JpaQueryParsingToken.expression("NULLS");
-
 	public static final JpaQueryParsingToken TOKEN_FIRST = JpaQueryParsingToken.expression("FIRST");
-
 	public static final JpaQueryParsingToken TOKEN_LAST = JpaQueryParsingToken.expression("LAST");
 
 	/**
@@ -120,15 +108,15 @@ class JpaQueryParsingToken {
 		this(token.getText(), true);
 	}
 
-	static JpaQueryParsingToken token(String token) {
-		return new JpaQueryParsingToken(token);
-	}
-
 	public static JpaQueryParsingToken token(TerminalNode node) {
-		return new JpaQueryParsingToken(node);
+		return token(node.getText());
 	}
 
 	public static JpaQueryParsingToken token(Token token) {
+		return token(token.getText());
+	}
+
+	static JpaQueryParsingToken token(String token) {
 		return new JpaQueryParsingToken(token);
 	}
 
@@ -137,11 +125,11 @@ class JpaQueryParsingToken {
 	}
 
 	public static JpaQueryParsingToken expression(Token token) {
-		return new JpaQueryExpression(token);
+		return expression(token.getText());
 	}
 
 	public static JpaQueryParsingToken expression(TerminalNode node) {
-		return new JpaQueryExpression(node);
+		return expression(node.getText());
 	}
 
 	public static JpaQueryParsingToken ventilated(Token op) {

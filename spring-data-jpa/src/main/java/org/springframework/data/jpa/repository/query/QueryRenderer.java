@@ -45,7 +45,9 @@ abstract class QueryRenderer {
 	 * @return
 	 */
 	static QueryRenderer from(Collection<JpaQueryParsingToken> tokens) {
-		return new TokenRenderer(new ArrayList<>(tokens));
+		List<JpaQueryParsingToken> tokensToUse = new ArrayList<>(32);
+		tokensToUse.addAll(tokens);
+		return new TokenRenderer(tokensToUse);
 	}
 
 	/**
@@ -349,7 +351,7 @@ abstract class QueryRenderer {
 				return this;
 			}
 
-			current = current.append(renderer instanceof InlineRenderer ? renderer : new InlineRenderer(renderer));
+			current = current.append(!renderer.isExpression() ? renderer : new InlineRenderer(renderer));
 
 			return this;
 		}
@@ -366,7 +368,7 @@ abstract class QueryRenderer {
 				return this;
 			}
 
-			current = current.append(renderer instanceof ExpressionRenderer ? renderer : new ExpressionRenderer(renderer));
+			current = current.append(renderer.isExpression() ? renderer : new ExpressionRenderer(renderer));
 
 			return this;
 		}

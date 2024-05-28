@@ -1813,10 +1813,15 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(JpaQueryParsingToken.token(ctx.CAST()));
+
 		builder.append(TOKEN_OPEN_PAREN);
-		builder.appendInline(visit(ctx.expression()));
-		builder.append(JpaQueryParsingToken.expression(ctx.AS()));
-		builder.appendInline(visit(ctx.castTarget()));
+
+		QueryRendererBuilder nested = QueryRenderer.builder();
+		nested.appendExpression(visit(ctx.expression()));
+		nested.append(JpaQueryParsingToken.expression(ctx.AS()));
+		nested.appendExpression(visit(ctx.castTarget()));
+
+		builder.appendInline(nested);
 		builder.append(TOKEN_CLOSE_PAREN);
 
 		return builder;

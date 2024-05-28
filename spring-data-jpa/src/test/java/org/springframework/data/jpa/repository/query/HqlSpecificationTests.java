@@ -253,7 +253,7 @@ class HqlSpecificationTests {
 		HqlQueryParser.parseQuery("""
 				SELECT b.name, b.ISBN
 				FROM Order o JOIN TREAT(o.product AS Book) b
-				    """);
+				""");
 	}
 
 	@Test
@@ -262,7 +262,7 @@ class HqlSpecificationTests {
 		HqlQueryParser.parseQuery("""
 				SELECT e FROM Employee e JOIN TREAT(e.projects AS LargeProject) lp
 				WHERE lp.budget > 1000
-				    """);
+				""");
 	}
 
 	/**
@@ -277,7 +277,7 @@ class HqlSpecificationTests {
 				WHERE TREAT(p AS LargeProject).budget > 1000
 				    OR TREAT(p AS SmallProject).name LIKE 'Persist%'
 				    OR p.description LIKE "cost overrun"
-				    """);
+				""");
 	}
 
 	@Test
@@ -288,7 +288,7 @@ class HqlSpecificationTests {
 				WHERE TREAT(p AS LargeProject).budget > 1000
 				    OR TREAT(p AS SmallProject).name LIKE 'Persist%'
 				    OR p.description LIKE 'cost overrun'
-				    """);
+				""");
 	}
 
 	@Test
@@ -298,7 +298,7 @@ class HqlSpecificationTests {
 				SELECT e FROM Employee e
 				WHERE TREAT(e AS Exempt).vacationDays > 10
 				    OR TREAT(e AS Contractor).hours > 100
-				    """);
+				""");
 	}
 
 	@Test
@@ -364,7 +364,7 @@ class HqlSpecificationTests {
 				    SELECT m.salary
 				    FROM Manager m
 				    WHERE m.department = emp.department)
-				    """);
+				""");
 	}
 
 	@Test
@@ -377,7 +377,7 @@ class HqlSpecificationTests {
 				    SELECT spouseEmp
 				    FROM Employee spouseEmp
 				    WHERE spouseEmp = emp.spouse)
-				    """);
+				""");
 	}
 
 	@Test
@@ -446,7 +446,7 @@ class HqlSpecificationTests {
 				         WHEN e.rating = 2 THEN e.salary * 1.05
 				         ELSE e.salary * 1.01
 				    END
-				    """);
+				""");
 	}
 
 	@Test
@@ -459,7 +459,7 @@ class HqlSpecificationTests {
 				                  WHEN 2 THEN e.salary * 1.05
 				                  ELSE e.salary * 1.01
 				    END
-				    """);
+				""");
 	}
 
 	@Test
@@ -499,7 +499,7 @@ class HqlSpecificationTests {
 				SELECT e
 				 FROM Employee e
 				 WHERE TYPE(e) IN (Exempt, Contractor)
-				 """);
+				""");
 	}
 
 	@Test

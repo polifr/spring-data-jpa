@@ -50,9 +50,10 @@ public class HqlParserTests {
 		public void doSetup() {
 
 			String s = """
-					SELECT d
-					FROM Department d LEFT JOIN FETCH d.employees
-					WHERE d.deptno = 1
+					SELECT e FROM Employee e JOIN e.projects p
+					WHERE TREAT(p AS LargeProject).budget > 1000
+					    OR TREAT(p AS SmallProject).name LIKE 'Persist%'
+					    OR p.description LIKE "cost overrun"
 					""";
 
 			query = DeclaredQuery.of(s, false);
