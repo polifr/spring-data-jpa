@@ -115,26 +115,6 @@ class HqlCountQueryTransformer extends HqlQueryRenderer {
 	}
 
 	@Override
-	public QueryRendererBuilder visitQueryOrder(HqlParser.QueryOrderContext ctx) {
-
-		QueryRendererBuilder builder = QueryRenderer.builder();
-
-		if (ctx.limitClause() != null) {
-			builder.appendExpression(visit(ctx.limitClause()));
-		}
-
-		if (ctx.offsetClause() != null) {
-			builder.appendExpression(visit(ctx.offsetClause()));
-		}
-
-		if (ctx.fetchClause() != null) {
-			builder.appendExpression(visit(ctx.fetchClause()));
-		}
-
-		return builder;
-	}
-
-	@Override
 	public QueryRendererBuilder visitFromRoot(HqlParser.FromRootContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
@@ -233,7 +213,6 @@ class HqlCountQueryTransformer extends HqlQueryRenderer {
 
 			builder.appendInline(nested);
 			builder.append(TOKEN_CLOSE_PAREN);
-			builder.current.render();
 
 		} else {
 
@@ -242,6 +221,26 @@ class HqlCountQueryTransformer extends HqlQueryRenderer {
 			}
 
 			builder.append(selectionListbuilder);
+		}
+
+		return builder;
+	}
+
+	@Override
+	public QueryRendererBuilder visitQueryOrder(HqlParser.QueryOrderContext ctx) {
+
+		QueryRendererBuilder builder = QueryRenderer.builder();
+
+		if (ctx.limitClause() != null) {
+			builder.appendExpression(visit(ctx.limitClause()));
+		}
+
+		if (ctx.offsetClause() != null) {
+			builder.appendExpression(visit(ctx.offsetClause()));
+		}
+
+		if (ctx.fetchClause() != null) {
+			builder.appendExpression(visit(ctx.fetchClause()));
 		}
 
 		return builder;
