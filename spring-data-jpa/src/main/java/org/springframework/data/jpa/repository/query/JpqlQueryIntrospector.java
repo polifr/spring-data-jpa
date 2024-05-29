@@ -65,21 +65,20 @@ class JpqlQueryIntrospector extends JpqlBaseVisitor<Void> implements ParsedQuery
 	@Override
 	public Void visitSelect_clause(JpqlParser.Select_clauseContext ctx) {
 
-		List<JpqlParser.Select_itemContext> selectItems = ctx.select_item();
-		List<JpaQueryParsingToken> tokens = new ArrayList<>(selectItems.size());
+		List<JpqlParser.Select_itemContext> selections = ctx.select_item();
+		List<JpaQueryParsingToken> selectItemTokens = new ArrayList<>(selections.size());
 
-		for (JpqlParser.Select_itemContext selectItem : selectItems) {
+		for (JpqlParser.Select_itemContext selection : selections) {
 
-			if (!tokens.isEmpty()) {
-				NOSPACE(tokens);
-				tokens.add(TOKEN_COMMA);
+			if (!selectItemTokens.isEmpty()) {
+				selectItemTokens.add(TOKEN_COMMA);
 			}
 
-			tokens.addAll(renderer.visitSelect_item(selectItem));
+			selectItemTokens.add(new JpaQueryParsingToken(renderer.visitSelect_item(selection).build().render(), false));
 		}
 
 		if (!projectionProcessed) {
-			projection = tokens;
+			projection = selectItemTokens;
 			projectionProcessed = true;
 		}
 

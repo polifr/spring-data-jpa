@@ -103,7 +103,6 @@ class EqlSortedQueryTransformer extends EqlQueryRenderer {
 				builder.append(sortBy);
 			}
 		}
-
 	}
 
 	@Override

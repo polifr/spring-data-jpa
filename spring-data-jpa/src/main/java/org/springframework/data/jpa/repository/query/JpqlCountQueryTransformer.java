@@ -17,9 +17,9 @@ package org.springframework.data.jpa.repository.query;
 
 import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.jpa.repository.query.QueryRenderer.QueryRendererBuilder;
 import org.springframework.lang.Nullable;
 
 /**
@@ -42,77 +42,70 @@ class JpqlCountQueryTransformer extends JpqlQueryRenderer {
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitSelect_statement(JpqlParser.Select_statementContext ctx) {
+	public QueryRenderer.QueryRendererBuilder visitSelect_statement(JpqlParser.Select_statementContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = new ArrayList<>(128);
+		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		tokens.addAll(visit(ctx.select_clause()));
-		tokens.addAll(visit(ctx.from_clause()));
+		builder.appendExpression(visit(ctx.select_clause()));
+		builder.appendExpression(visit(ctx.from_clause()));
 
 		if (ctx.where_clause() != null) {
-			tokens.addAll(visit(ctx.where_clause()));
+			builder.appendExpression(visit(ctx.where_clause()));
 		}
-
 		if (ctx.groupby_clause() != null) {
-			tokens.addAll(visit(ctx.groupby_clause()));
+			builder.appendExpression(visit(ctx.groupby_clause()));
 		}
-
 		if (ctx.having_clause() != null) {
-			tokens.addAll(visit(ctx.having_clause()));
+			builder.appendExpression(visit(ctx.having_clause()));
 		}
 
-		return tokens;
+		return builder;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitSelect_clause(JpqlParser.Select_clauseContext ctx) {
+	public QueryRendererBuilder visitSelect_clause(JpqlParser.Select_clauseContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = new ArrayList<>(ctx.select_item().size() * 2 + 20);
+		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		tokens.add(new JpaQueryParsingToken(ctx.SELECT()));
-		tokens.add(TOKEN_COUNT_FUNC);
-
-		if (ctx.DISTINCT() != null) {
-			tokens.add(new JpaQueryParsingToken(ctx.DISTINCT()));
-		}
-
-		List<JpaQueryParsingToken> selectItemTokens = new ArrayList<>(ctx.select_item().size() * 2);
-
-		for (JpqlParser.Select_itemContext selectItem : ctx.select_item()) {
-
-			if (!selectItemTokens.isEmpty()) {
-				selectItemTokens.add(TOKEN_COMMA);
-			}
-
-			selectItemTokens.addAll(visit(selectItem));
-		}
-
-		SPACE(selectItemTokens);
+		builder.append(JpaQueryParsingToken.expression(ctx.SELECT()));
+		builder.append(TOKEN_COUNT_FUNC);
 
 		if (countProjection != null) {
-			tokens.add(new JpaQueryParsingToken(countProjection));
-		} else {
+			builder.append(JpaQueryParsingToken.token(countProjection));
+		}
+
+		QueryRendererBuilder nested = QueryRenderer.builder();
+
+		if (ctx.DISTINCT() != null) {
+			nested.append(JpaQueryParsingToken.expression(ctx.DISTINCT()));
+		}
+
+		if (countProjection == null) {
 
 			if (ctx.DISTINCT() != null) {
 
-				List<JpaQueryParsingToken> countSelection = QueryTransformers.filterCountSelection(selectItemTokens);
+				QueryRendererBuilder selectionListbuilder = QueryRendererBuilder.concat(ctx.select_item(), this::visit,
+						TOKEN_COMMA);
+
+				List<JpaQueryParsingToken> countSelection = QueryTransformers
+						.filterCountSelection(selectionListbuilder.build().stream().toList());
 
 				if (countSelection.stream().anyMatch(jpqlToken -> jpqlToken.getToken().contains("new"))) {
 					// constructor
-					tokens.add(new JpaQueryParsingToken(primaryFromAlias));
+					nested.append(new JpaQueryParsingToken(primaryFromAlias));
 				} else {
 					// keep all the select items to distinct against
-					tokens.addAll(countSelection);
+					nested.append(countSelection);
 				}
 			} else {
-				tokens.add(new JpaQueryParsingToken(primaryFromAlias));
+				nested.append(new JpaQueryParsingToken(primaryFromAlias));
 			}
 		}
 
-		NOSPACE(tokens);
-		tokens.add(TOKEN_CLOSE_PAREN);
+		builder.appendInline(nested);
+		builder.append(TOKEN_CLOSE_PAREN);
 
-		return tokens;
+		return builder;
 	}
 
 }

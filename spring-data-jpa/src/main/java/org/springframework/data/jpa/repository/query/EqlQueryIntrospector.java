@@ -62,7 +62,6 @@ class EqlQueryIntrospector extends EqlBaseVisitor<Void> implements ParsedQueryIn
 		for (EqlParser.Select_itemContext selection : selections) {
 
 			if (!selectItemTokens.isEmpty()) {
-				NOSPACE(selectItemTokens);
 				selectItemTokens.add(TOKEN_COMMA);
 			}
 

@@ -20,6 +20,7 @@ import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken
 import java.util.List;
 
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.query.QueryRenderer.QueryRendererBuilder;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -31,6 +32,7 @@ import org.springframework.util.Assert;
  * @author Mark Paluch
  * @since 3.1
  */
+@SuppressWarnings("ConstantValue")
 class JpqlSortedQueryTransformer extends JpqlQueryRenderer {
 
 	private final JpaQueryTransformerSupport transformerSupport = new JpaQueryTransformerSupport();
@@ -46,47 +48,78 @@ class JpqlSortedQueryTransformer extends JpqlQueryRenderer {
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitSelect_statement(JpqlParser.Select_statementContext ctx) {
+	public QueryRendererBuilder visitSelect_statement(JpqlParser.Select_statementContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = super.visitSelect_statement(ctx);
+		QueryRendererBuilder builder = QueryRenderer.builder();
+
+		builder.appendExpression(visit(ctx.select_clause()));
+		builder.appendExpression(visit(ctx.from_clause()));
+
+		if (ctx.where_clause() != null) {
+			builder.appendExpression(visit(ctx.where_clause()));
+		}
+
+		if (ctx.groupby_clause() != null) {
+			builder.appendExpression(visit(ctx.groupby_clause()));
+		}
+
+		if (ctx.having_clause() != null) {
+			builder.appendExpression(visit(ctx.having_clause()));
+		}
+
+		doVisitOrderBy(builder, ctx);
+
+		return builder;
+	}
+
+	private void doVisitOrderBy(QueryRendererBuilder builder, JpqlParser.Select_statementContext ctx) {
+
+		if (ctx.orderby_clause() != null) {
+			QueryRendererBuilder existingOrder = visit(ctx.orderby_clause());
+			if (sort.isSorted()) {
+				builder.appendInline(existingOrder);
+			} else {
+				builder.append(existingOrder);
+			}
+		}
 
 		if (sort.isSorted()) {
 
+			List<JpaQueryParsingToken> sortBy = transformerSupport.orderBy(primaryFromAlias, sort);
+
 			if (ctx.orderby_clause() != null) {
 
-				NOSPACE(tokens);
-				tokens.add(TOKEN_COMMA);
+				QueryRendererBuilder extension = QueryRenderer.builder().append(TOKEN_COMMA).append(sortBy);
+
+				builder.appendInline(extension);
 			} else {
-
-				SPACE(tokens);
-				tokens.add(TOKEN_ORDER_BY);
+				builder.append(TOKEN_ORDER_BY);
+				builder.append(sortBy);
 			}
-
-			tokens.addAll(transformerSupport.generateOrderByArguments(primaryFromAlias, sort));
 		}
-
-		return tokens;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitSelect_item(JpqlParser.Select_itemContext ctx) {
+	public QueryRendererBuilder visitSelect_item(JpqlParser.Select_itemContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = super.visitSelect_item(ctx);
+		QueryRendererBuilder builder = super.visitSelect_item(ctx);
 
 		if (ctx.result_variable() != null) {
+			List<JpaQueryParsingToken> tokens = builder.build().stream().toList();
 			transformerSupport.registerAlias(tokens.get(tokens.size() - 1).getToken());
 		}
 
-		return tokens;
+		return builder;
 	}
 
 	@Override
-	public List<JpaQueryParsingToken> visitJoin(JpqlParser.JoinContext ctx) {
+	public QueryRendererBuilder visitJoin(JpqlParser.JoinContext ctx) {
 
-		List<JpaQueryParsingToken> tokens = super.visitJoin(ctx);
+		QueryRendererBuilder builder = super.visitJoin(ctx);
 
+		List<JpaQueryParsingToken> tokens = builder.build().stream().toList();
 		transformerSupport.registerAlias(tokens.get(tokens.size() - 1).getToken());
 
-		return tokens;
+		return builder;
 	}
 }

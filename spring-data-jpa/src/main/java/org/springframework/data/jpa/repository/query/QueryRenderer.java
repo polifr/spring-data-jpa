@@ -218,7 +218,6 @@ abstract class QueryRenderer {
 		 */
 		public static <T> QueryRendererBuilder concat(Collection<T> elements, Function<T, QueryRendererBuilder> visitor,
 				JpaQueryParsingToken separator) {
-
 			return concat(elements, visitor, QueryRendererBuilder::toInline, separator);
 		}
 
