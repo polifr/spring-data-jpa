@@ -16,7 +16,6 @@
 package org.springframework.data.jpa.repository.query;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.function.Supplier;
 
 import org.antlr.v4.runtime.Token;
@@ -35,23 +34,22 @@ class JpaQueryParsingToken {
 	 * Commonly use tokens.
 	 */
 	public static final JpaQueryParsingToken TOKEN_NONE = JpaQueryParsingToken.token("");
-	public static final JpaQueryParsingToken TOKEN_SPACE = JpaQueryParsingToken.token(" ");
 	public static final JpaQueryParsingToken TOKEN_COMMA = JpaQueryParsingToken.token(", ");
-	public static final JpaQueryParsingToken TOKEN_DOT = new JpaQueryParsingToken(".", false);
+	public static final JpaQueryParsingToken TOKEN_SPACE = JpaQueryParsingToken.token(" ");
+	public static final JpaQueryParsingToken TOKEN_DOT = JpaQueryParsingToken.token(".");
 	public static final JpaQueryParsingToken TOKEN_EQUALS = JpaQueryParsingToken.token(" = ");
 	public static final JpaQueryParsingToken TOKEN_OPEN_PAREN = JpaQueryParsingToken.token("(");
 	public static final JpaQueryParsingToken TOKEN_CLOSE_PAREN = JpaQueryParsingToken.token(")");
 	public static final JpaQueryParsingToken TOKEN_ORDER_BY = JpaQueryParsingToken.expression("order by");
 	public static final JpaQueryParsingToken TOKEN_LOWER_FUNC = new JpaQueryParsingToken("lower(");
 	public static final JpaQueryParsingToken TOKEN_SELECT_COUNT = JpaQueryParsingToken.token("select count(");
-	public static final JpaQueryParsingToken TOKEN_PERCENT = new JpaQueryParsingToken("%");
-	public static final JpaQueryParsingToken TOKEN_COUNT_FUNC = new JpaQueryParsingToken("count(", false);
+	public static final JpaQueryParsingToken TOKEN_COUNT_FUNC = JpaQueryParsingToken.token("count(");
 	public static final JpaQueryParsingToken TOKEN_DOUBLE_PIPE = JpaQueryParsingToken.token(" || ");
-	public static final JpaQueryParsingToken TOKEN_OPEN_SQUARE_BRACKET = new JpaQueryParsingToken("[", false);
+	public static final JpaQueryParsingToken TOKEN_OPEN_SQUARE_BRACKET = JpaQueryParsingToken.token("[");
 	public static final JpaQueryParsingToken TOKEN_CLOSE_SQUARE_BRACKET = new JpaQueryParsingToken("]");
-	public static final JpaQueryParsingToken TOKEN_COLON = new JpaQueryParsingToken(":", false);
-	public static final JpaQueryParsingToken TOKEN_QUESTION_MARK = new JpaQueryParsingToken("?", false);
-	public static final JpaQueryParsingToken TOKEN_OPEN_BRACE = new JpaQueryParsingToken("{", false);
+	public static final JpaQueryParsingToken TOKEN_COLON = JpaQueryParsingToken.token(":");
+	public static final JpaQueryParsingToken TOKEN_QUESTION_MARK = JpaQueryParsingToken.token("?");
+	public static final JpaQueryParsingToken TOKEN_OPEN_BRACE = JpaQueryParsingToken.token("{");
 	public static final JpaQueryParsingToken TOKEN_CLOSE_BRACE = new JpaQueryParsingToken("}");
 	public static final JpaQueryParsingToken TOKEN_DOUBLE_UNDERSCORE = JpaQueryParsingToken.token("__");
 	public static final JpaQueryParsingToken TOKEN_AS = JpaQueryParsingToken.expression("AS");
@@ -67,45 +65,10 @@ class JpaQueryParsingToken {
 	/**
 	 * The text value of the token.
 	 */
-	private final Supplier<String> token;
-
-	/**
-	 * Space|NoSpace after token is rendered?
-	 */
-	private final boolean space;
-
-	JpaQueryParsingToken(Supplier<String> token, boolean space) {
-
-		this.token = token;
-		this.space = space;
-	}
-
-	JpaQueryParsingToken(String token, boolean space) {
-		this(() -> token, space);
-	}
-
-	JpaQueryParsingToken(Supplier<String> token) {
-		this(token, true);
-	}
+	private final String token;
 
 	JpaQueryParsingToken(String token) {
-		this(() -> token, true);
-	}
-
-	JpaQueryParsingToken(TerminalNode node, boolean space) {
-		this(node.getText(), space);
-	}
-
-	JpaQueryParsingToken(TerminalNode node) {
-		this(node.getText());
-	}
-
-	JpaQueryParsingToken(Token token, boolean space) {
-		this(token.getText(), space);
-	}
-
-	JpaQueryParsingToken(Token token) {
-		this(token.getText(), true);
+		this.token = token;
 	}
 
 	public static JpaQueryParsingToken token(TerminalNode node) {
@@ -136,18 +99,8 @@ class JpaQueryParsingToken {
 		return new JpaQueryParsingToken(" " + op.getText() + " ");
 	}
 
-	/**
-	 * Extract the token's value from it's {@link Supplier}.
-	 */
 	String getToken() {
-		return this.token.get();
-	}
-
-	/**
-	 * Should we render a space after the token?
-	 */
-	boolean getSpace() {
-		return this.space;
+		return token;
 	}
 
 	/**
@@ -163,50 +116,6 @@ class JpaQueryParsingToken {
 	@Override
 	public String toString() {
 		return getToken();
-	}
-
-	public JpaQueryParsingToken noSpace() {
-		return new JpaQueryParsingToken(token, false);
-	}
-
-	/**
-	 * Switch the last {@link JpaQueryParsingToken}'s spacing to {@literal true}.
-	 */
-	static void SPACE(List<JpaQueryParsingToken> tokens) {
-
-		if (!tokens.isEmpty()) {
-
-			int index = tokens.size() - 1;
-
-			JpaQueryParsingToken lastTokenWithSpacing = new JpaQueryParsingToken(tokens.get(index).token);
-			tokens.remove(index);
-			tokens.add(lastTokenWithSpacing);
-		}
-	}
-
-	/**
-	 * Switch the last {@link JpaQueryParsingToken}'s spacing to {@literal false}.
-	 */
-	static void NOSPACE(List<JpaQueryParsingToken> tokens) {
-
-		if (!tokens.isEmpty()) {
-
-			int index = tokens.size() - 1;
-
-			JpaQueryParsingToken lastTokenWithNoSpacing = new JpaQueryParsingToken(tokens.get(index).token, false);
-			tokens.remove(index);
-			tokens.add(lastTokenWithNoSpacing);
-		}
-	}
-
-	/**
-	 * Drop the last entry from the list of {@link JpaQueryParsingToken}s.
-	 */
-	static void CLIP(List<JpaQueryParsingToken> tokens) {
-
-		if (!tokens.isEmpty()) {
-			tokens.remove(tokens.size() - 1);
-		}
 	}
 
 	/**
@@ -254,14 +163,6 @@ class JpaQueryParsingToken {
 	static class JpaQueryExpression extends JpaQueryParsingToken {
 
 		JpaQueryExpression(String token) {
-			super(token);
-		}
-
-		public JpaQueryExpression(TerminalNode node) {
-			super(node);
-		}
-
-		public JpaQueryExpression(Token token) {
 			super(token);
 		}
 	}
