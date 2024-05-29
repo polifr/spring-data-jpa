@@ -66,7 +66,7 @@ class EqlQueryIntrospector extends EqlBaseVisitor<Void> implements ParsedQueryIn
 				selectItemTokens.add(TOKEN_COMMA);
 			}
 
-			selectItemTokens.addAll(renderer.visitSelect_item(selection));
+			selectItemTokens.add(new JpaQueryParsingToken(renderer.visitSelect_item(selection).build().render(), false));
 		}
 
 		if (!projectionProcessed) {
