@@ -82,7 +82,7 @@ class HqlCountQueryTransformer extends HqlQueryRenderer {
 				if (primaryFromAlias == null) {
 					countBuilder.append(TOKEN_DOUBLE_UNDERSCORE);
 				} else {
-					countBuilder.append(new JpaQueryParsingToken(primaryFromAlias, false));
+					countBuilder.append(JpaQueryParsingToken.token(primaryFromAlias));
 				}
 			}
 
@@ -217,7 +217,7 @@ class HqlCountQueryTransformer extends HqlQueryRenderer {
 		} else {
 
 			if (ctx.DISTINCT() != null) {
-				builder.append(new JpaQueryParsingToken(ctx.DISTINCT()));
+				builder.append(JpaQueryParsingToken.expression(ctx.DISTINCT()));
 			}
 
 			builder.append(selectionListbuilder);

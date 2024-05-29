@@ -57,7 +57,7 @@ class EqlQueryIntrospector extends EqlBaseVisitor<Void> implements ParsedQueryIn
 	public Void visitSelect_clause(EqlParser.Select_clauseContext ctx) {
 
 		List<EqlParser.Select_itemContext> selections = ctx.select_item();
-		List<JpaQueryParsingToken> selectItemTokens = new ArrayList<>(selections.size());
+		List<JpaQueryParsingToken> selectItemTokens = new ArrayList<>(selections.size() * 2);
 
 		for (EqlParser.Select_itemContext selection : selections) {
 
@@ -65,7 +65,7 @@ class EqlQueryIntrospector extends EqlBaseVisitor<Void> implements ParsedQueryIn
 				selectItemTokens.add(TOKEN_COMMA);
 			}
 
-			selectItemTokens.add(new JpaQueryParsingToken(renderer.visitSelect_item(selection).build().render(), false));
+			selectItemTokens.add(JpaQueryParsingToken.token(renderer.visitSelect_item(selection).build().render()));
 		}
 
 		if (!projectionProcessed) {

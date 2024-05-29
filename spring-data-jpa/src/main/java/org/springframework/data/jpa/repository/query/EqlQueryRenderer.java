@@ -1412,8 +1412,8 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.appendExpression(visit(ctx.datetime_expression(0)));
-		builder.appendExpression(visit(ctx.comparison_operator()));
+		builder.appendInline(visit(ctx.datetime_expression(0)));
+		builder.append(JpaQueryParsingToken.ventilated(ctx.comparison_operator().op));
 
 		if (ctx.datetime_expression(1) != null) {
 			builder.append(visit(ctx.datetime_expression(1)));
@@ -1950,7 +1950,8 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		builder.append(JpaQueryParsingToken.token(ctx.CAST()));
 		builder.append(TOKEN_OPEN_PAREN);
-		builder.appendExpression(visit(ctx.single_valued_path_expression()));
+		builder.appendInline(visit(ctx.single_valued_path_expression()));
+		builder.append(TOKEN_SPACE);
 		builder.appendInline(visit(ctx.identification_variable()));
 
 		if (ctx.numeric_literal() != null) {
@@ -1995,7 +1996,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		builder.append(TOKEN_OPEN_PAREN);
 		builder.appendExpression(visit(ctx.datetime_field()));
 		builder.append(JpaQueryParsingToken.expression(ctx.FROM()));
-		builder.appendExpression(visit(ctx.datetime_expression()));
+		builder.appendInline(visit(ctx.datetime_expression()));
 		builder.append(TOKEN_CLOSE_PAREN);
 
 		return builder;

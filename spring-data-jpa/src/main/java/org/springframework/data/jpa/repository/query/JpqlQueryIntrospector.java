@@ -28,7 +28,7 @@ import org.springframework.lang.Nullable;
  *
  * @author Mark Paluch
  */
-@SuppressWarnings("UnreachableCode")
+@SuppressWarnings({ "UnreachableCode", "ConstantValue" })
 class JpqlQueryIntrospector extends JpqlBaseVisitor<Void> implements ParsedQueryIntrospector {
 
 	private final JpqlQueryRenderer renderer = new JpqlQueryRenderer();
@@ -66,7 +66,7 @@ class JpqlQueryIntrospector extends JpqlBaseVisitor<Void> implements ParsedQuery
 	public Void visitSelect_clause(JpqlParser.Select_clauseContext ctx) {
 
 		List<JpqlParser.Select_itemContext> selections = ctx.select_item();
-		List<JpaQueryParsingToken> selectItemTokens = new ArrayList<>(selections.size());
+		List<JpaQueryParsingToken> selectItemTokens = new ArrayList<>(selections.size() * 2);
 
 		for (JpqlParser.Select_itemContext selection : selections) {
 
@@ -74,7 +74,7 @@ class JpqlQueryIntrospector extends JpqlBaseVisitor<Void> implements ParsedQuery
 				selectItemTokens.add(TOKEN_COMMA);
 			}
 
-			selectItemTokens.add(new JpaQueryParsingToken(renderer.visitSelect_item(selection).build().render(), false));
+			selectItemTokens.add(JpaQueryParsingToken.token(renderer.visitSelect_item(selection).build().render()));
 		}
 
 		if (!projectionProcessed) {

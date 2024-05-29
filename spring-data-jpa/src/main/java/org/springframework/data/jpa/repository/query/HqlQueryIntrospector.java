@@ -62,11 +62,10 @@ class HqlQueryIntrospector extends HqlBaseVisitor<Void> implements ParsedQueryIn
 		for (HqlParser.SelectionContext selection : selections) {
 
 			if (!selectItemTokens.isEmpty()) {
-				NOSPACE(selectItemTokens);
 				selectItemTokens.add(TOKEN_COMMA);
 			}
 
-			selectItemTokens.add(new JpaQueryParsingToken(renderer.visitSelection(selection).build().render(), false));
+			selectItemTokens.add(JpaQueryParsingToken.token(renderer.visitSelection(selection).build().render()));
 		}
 
 		if (!projectionProcessed) {

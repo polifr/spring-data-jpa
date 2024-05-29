@@ -277,7 +277,7 @@ class HqlQueryRendererTests {
 
 		assertQuery("""
 				SELECT DISTINCT o
-				FROM Order o , IN (o.lineItems) l
+				FROM Order o , IN(o.lineItems) l
 				WHERE l.product.productType = 'office_supplies'
 				""");
 	}
@@ -403,7 +403,7 @@ class HqlQueryRendererTests {
 		assertQuery("""
 				SELECT emp
 				FROM Employee emp
-				WHERE emp.salary > ALL(SELECT m.salary
+				WHERE emp.salary > ALL (SELECT m.salary
 				    FROM Manager m
 				    WHERE m.department = emp.department)
 				    """);
@@ -790,7 +790,7 @@ class HqlQueryRendererTests {
 
 		assertQuery("""
 				SELECT p.product_name
-				FROM Order o , IN (o.lineItems) l JOIN o.customer c
+				FROM Order o , IN(o.lineItems) l JOIN o.customer c
 				WHERE c.lastname = 'Smith' AND c.firstname = 'John'
 				ORDER BY o.quantity
 				""");

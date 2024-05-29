@@ -49,40 +49,6 @@ class JpaQueryTransformerSupport {
 	 * @param sort
 	 * @return
 	 */
-	List<JpaQueryParsingToken> generateOrderByArguments(String primaryFromAlias, Sort sort) {
-
-		List<JpaQueryParsingToken> tokens = new ArrayList<>();
-
-		sort.forEach(order -> {
-
-			checkSortExpression(order);
-
-			if (order.isIgnoreCase()) {
-				tokens.add(TOKEN_LOWER_FUNC);
-			}
-
-			tokens.add(JpaQueryParsingToken.expression(generateOrderByArgument(primaryFromAlias, order)));
-
-			if (order.isIgnoreCase()) {
-				NOSPACE(tokens);
-				tokens.add(TOKEN_CLOSE_PAREN);
-			}
-			tokens.add(order.isDescending() ? TOKEN_DESC : TOKEN_ASC);
-			tokens.add(TOKEN_COMMA);
-		});
-		CLIP(tokens);
-
-		return tokens;
-	}
-
-	/**
-	 * Using the primary {@literal FROM} clause's alias and a {@link Sort}, construct all the {@literal ORDER BY}
-	 * arguments.
-	 *
-	 * @param primaryFromAlias
-	 * @param sort
-	 * @return
-	 */
 	List<JpaQueryParsingToken> orderBy(String primaryFromAlias, Sort sort) {
 
 		List<JpaQueryParsingToken> tokens = new ArrayList<>();
