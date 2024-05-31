@@ -78,9 +78,7 @@ public interface QueryEnhancer {
 	 *
 	 * @return whether the given JPQL query contains a constructor expression.
 	 */
-	default boolean hasConstructorExpression() {
-		return QueryUtils.hasConstructorExpression(getQuery().getQueryString());
-	}
+	boolean hasConstructorExpression();
 
 	/**
 	 * Returns the projection part of the query, i.e. everything between {@code select} and {@code from}.
@@ -89,6 +87,11 @@ public interface QueryEnhancer {
 	 */
 	String getProjection();
 
+	/**
+	 * Returns the join aliases of the query.
+	 *
+	 * @return the join aliases of the query.
+	 */
 	Set<String> getJoinAliases();
 
 	/**
@@ -96,5 +99,6 @@ public interface QueryEnhancer {
 	 *
 	 * @return non-null {@link DeclaredQuery} that wraps the query
 	 */
+	@Deprecated(forRemoval = true)
 	DeclaredQuery getQuery();
 }

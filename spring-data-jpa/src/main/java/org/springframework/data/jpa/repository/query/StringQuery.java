@@ -83,7 +83,6 @@ class StringQuery implements DeclaredQuery {
 				this.bindings, queryMeta);
 
 		this.usesJdbcStyleParameters = queryMeta.usesJdbcStyleParameters;
-
 		this.queryEnhancer = QueryEnhancerFactory.forQuery(this);
 	}
 

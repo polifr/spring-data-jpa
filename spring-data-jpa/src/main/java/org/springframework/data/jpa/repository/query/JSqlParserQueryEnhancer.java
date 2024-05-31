@@ -38,7 +38,6 @@ import net.sf.jsqlparser.statement.update.Update;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -65,6 +64,11 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	private final DeclaredQuery query;
 	private final Statement statement;
 	private final ParsedType parsedType;
+	private final boolean hasConstructorExpression;
+	private final String projection;
+	private final @Nullable String primaryAlias;
+	private final Set<String> joinAliases;
+	private final Set<String> selectAliases;
 
 	/**
 	 * @param query the query we want to enhance. Must not be {@literal null}.
@@ -72,13 +76,172 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	public JSqlParserQueryEnhancer(DeclaredQuery query) {
 
 		this.query = query;
-		try {
-			this.statement = CCJSqlParserUtil.parse(this.query.getQueryString());
-		} catch (JSQLParserException e) {
-			throw new IllegalArgumentException("The query is not a valid SQL Query", e);
-		}
+		this.statement = parseStatement(query.getQueryString(), Statement.class);
 
 		this.parsedType = detectParsedType(statement);
+		this.primaryAlias = detectAlias(this.parsedType, this.statement);
+		this.hasConstructorExpression = QueryUtils.hasConstructorExpression(query.getQueryString());
+		this.joinAliases = Collections.unmodifiableSet(getJoinAliases(this.statement));
+		this.selectAliases = Collections.unmodifiableSet(getSelectionAliases(this.statement));
+		this.projection = detectProjection(this.statement);
+	}
+
+	/**
+	 * Parses a query string with JSqlParser.
+	 *
+	 * @param query the query to parse
+	 * @return the parsed query
+	 */
+	private static <T extends Statement> T parseStatement(String query, Class<T> classOfT) {
+
+		try {
+			return classOfT.cast(CCJSqlParserUtil.parse(query));
+		} catch (JSQLParserException e) {
+			throw new IllegalArgumentException("The query you provided is not a valid SQL Query", e);
+		}
+	}
+
+	/**
+	 * Resolves the alias for the entity to be retrieved from the given JPA query. Note that you only provide valid Query
+	 * strings. Things such as <code>from User u</code> will throw an {@link IllegalArgumentException}.
+	 *
+	 * @return Might return {@literal null}.
+	 */
+	@Nullable
+	private static String detectAlias(ParsedType parsedType, Statement statement) {
+
+		if (ParsedType.MERGE.equals(parsedType)) {
+
+			Merge mergeStatement = (Merge) statement;
+			return detectAlias(mergeStatement);
+
+		} else if (ParsedType.SELECT.equals(parsedType)) {
+
+			Select selectStatement = (Select) statement;
+
+			/*
+			 * For all the other types ({@link ValuesStatement} and {@link SetOperationList}) it does not make sense to provide
+			 * alias since:
+			 * ValuesStatement has no alias
+			 * SetOperation can have multiple alias for each operation item
+			 */
+			if (!(selectStatement instanceof PlainSelect selectBody)) {
+				return null;
+			}
+
+			return detectAlias(selectBody);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Resolves the alias for the entity to be retrieved from the given {@link PlainSelect}. Note that you only provide
+	 * valid Query strings. Things such as <code>from User u</code> will throw an {@link IllegalArgumentException}.
+	 *
+	 * @param selectBody must not be {@literal null}.
+	 * @return Might return {@literal null}.
+	 */
+	@Nullable
+	private static String detectAlias(PlainSelect selectBody) {
+
+		if (selectBody.getFromItem() == null) {
+			return null;
+		}
+
+		Alias alias = selectBody.getFromItem().getAlias();
+		return alias == null ? null : alias.getName();
+	}
+
+	/**
+	 * Resolves the alias for the given {@link Merge} statement.
+	 *
+	 * @param mergeStatement must not be {@literal null}.
+	 * @return Might return {@literal null}.
+	 */
+	@Nullable
+	private static String detectAlias(Merge mergeStatement) {
+
+		Alias alias = mergeStatement.getUsingAlias();
+		return alias == null ? null : alias.getName();
+	}
+
+	/**
+	 * Returns the aliases used inside the selection part in the query.
+	 *
+	 * @return a {@literal Set} containing all found aliases. Guaranteed to be not {@literal null}.
+	 */
+	private static Set<String> getSelectionAliases(Statement statement) {
+
+		if (statement instanceof PlainSelect select) {
+
+			if (CollectionUtils.isEmpty(select.getSelectItems())) {
+				return Collections.emptySet();
+			}
+
+			return select.getSelectItems().stream() //
+					.filter(SelectItem.class::isInstance) //
+					.map(SelectItem::getAlias) //
+					.filter(Objects::nonNull) //
+					.map(Alias::getName) //
+					.collect(Collectors.toSet());
+		}
+
+		return Collections.emptySet();
+	}
+
+	/**
+	 * Returns the aliases used for {@code join}s.
+	 *
+	 * @return a {@literal Set} of aliases used in the query. Guaranteed to be not {@literal null}.
+	 */
+	private static Set<String> getJoinAliases(Statement statement) {
+
+		if (statement instanceof PlainSelect selectBody) {
+
+			if (CollectionUtils.isEmpty(selectBody.getJoins())) {
+				return Collections.emptySet();
+			}
+
+			return selectBody.getJoins().stream() //
+					.map(join -> join.getRightItem().getAlias()) //
+					.filter(Objects::nonNull) //
+					.map(Alias::getName) //
+					.collect(Collectors.toSet());
+		}
+
+		return Collections.emptySet();
+	}
+
+	private static String detectProjection(Statement statement) {
+
+		if (statement instanceof Select select) {
+
+			Select selectStatement = (Select) statement;
+
+			if (selectStatement instanceof Values) {
+				return "";
+			}
+
+			Select selectBody = selectStatement;
+
+			if (selectStatement instanceof SetOperationList setOperationList) {
+
+				// using the first one since for setoperations the projection has to be the same
+				selectBody = setOperationList.getSelects().get(0);
+
+				if (!(selectBody instanceof PlainSelect)) {
+					return "";
+				}
+			}
+
+			return ((PlainSelect) selectBody).getSelectItems() //
+					.stream() //
+					.map(Object::toString) //
+					.collect(Collectors.joining(", ")).trim();
+		}
+
+		return "";
 	}
 
 	/**
@@ -109,15 +272,11 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 		String queryString = query.getQueryString();
 		Assert.hasText(queryString, "Query must not be null or empty");
 
-		if (this.parsedType != ParsedType.SELECT) {
+		if (this.parsedType != ParsedType.SELECT || sort.isUnsorted()) {
 			return queryString;
 		}
 
-		if (sort.isUnsorted()) {
-			return queryString;
-		}
-
-		Select selectStatement = parseSelectStatement(queryString);
+		Select selectStatement = parseStatement(queryString);
 
 		if (selectStatement instanceof SetOperationList setOperationList) {
 			return applySortingToSetOperationList(setOperationList, sort);
@@ -127,11 +286,8 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 			return queryString;
 		}
 
-		Set<String> joinAliases = getJoinAliases(selectBody);
-		Set<String> selectionAliases = getSelectionAliases(selectBody);
-
 		List<OrderByElement> orderByElements = sort.stream() //
-				.map(order -> getOrderClause(joinAliases, selectionAliases, alias, order)) //
+				.map(order -> getOrderClause(joinAliases, selectAliases, alias, order)) //
 				.toList();
 
 		if (CollectionUtils.isEmpty(selectBody.getOrderByElements())) {
@@ -141,6 +297,16 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 		selectBody.getOrderByElements().addAll(orderByElements);
 
 		return selectStatement.toString();
+	}
+
+	/**
+	 * Parses a query string with JSqlParser.
+	 *
+	 * @param query the query to parse
+	 * @return the parsed query
+	 */
+	private Select parseStatement(String query) {
+		return parseStatement(query, Select.class);
 	}
 
 	/**
@@ -171,79 +337,6 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	}
 
 	/**
-	 * Returns the aliases used inside the selection part in the query.
-	 *
-	 * @param selectBody a {@link PlainSelect} containing a query. Must not be {@literal null}.
-	 * @return a {@literal Set} containing all found aliases. Guaranteed to be not {@literal null}.
-	 */
-	private Set<String> getSelectionAliases(PlainSelect selectBody) {
-
-		if (CollectionUtils.isEmpty(selectBody.getSelectItems())) {
-			return new HashSet<>();
-		}
-
-		return selectBody.getSelectItems().stream() //
-				.filter(SelectItem.class::isInstance) //
-				.map(item -> ((SelectItem) item).getAlias()) //
-				.filter(Objects::nonNull) //
-				.map(Alias::getName) //
-				.collect(Collectors.toSet());
-	}
-
-	/**
-	 * Returns the aliases used inside the selection part in the query.
-	 *
-	 * @return a {@literal Set} containing all found aliases. Guaranteed to be not {@literal null}.
-	 */
-	Set<String> getSelectionAliases() {
-
-		if (this.parsedType != ParsedType.SELECT) {
-			return new HashSet<>();
-		}
-
-		return this.getSelectionAliases((PlainSelect) statement);
-	}
-
-	/**
-	 * Returns the aliases used for {@code join}s.
-	 *
-	 * @param query a query string to extract the aliases of joins from. Must not be {@literal null}.
-	 * @return a {@literal Set} of aliases used in the query. Guaranteed to be not {@literal null}.
-	 */
-	private Set<String> getJoinAliases(String query) {
-
-		if (this.parsedType != ParsedType.SELECT) {
-			return new HashSet<>();
-		}
-
-		Select selectStatement = (Select) statement;
-		if (selectStatement instanceof PlainSelect selectBody) {
-			return getJoinAliases(selectBody);
-		}
-
-		return new HashSet<>();
-	}
-
-	/**
-	 * Returns the aliases used for {@code join}s.
-	 *
-	 * @param selectBody the selection body to extract the aliases of joins from. Must not be {@literal null}.
-	 * @return a {@literal Set} of aliases used in the query. Guaranteed to be not {@literal null}.
-	 */
-	private Set<String> getJoinAliases(PlainSelect selectBody) {
-
-		if (CollectionUtils.isEmpty(selectBody.getJoins())) {
-			return new HashSet<>();
-		}
-
-		return selectBody.getJoins().stream() //
-				.map(join -> join.getRightItem().getAlias()) //
-				.filter(Objects::nonNull) //
-				.map(Alias::getName) //
-				.collect(Collectors.toSet());
-	}
-
-	/**
 	 * Returns the order clause for the given {@link Sort.Order}. Will prefix the clause with the given alias if the
 	 * referenced property refers to a join alias, i.e. starts with {@code $alias.}.
 	 *
@@ -252,10 +345,10 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	 * @param order the order object to build the clause for. Must not be {@literal null}.
 	 * @return a {@link OrderByElement} containing an order clause. Guaranteed to be not {@literal null}.
 	 */
-	private OrderByElement getOrderClause(final Set<String> joinAliases, final Set<String> selectionAliases,
-			@Nullable final String alias, final Sort.Order order) {
+	private OrderByElement getOrderClause(Set<String> joinAliases, Set<String> selectionAliases, @Nullable String alias,
+			Sort.Order order) {
 
-		final OrderByElement orderByElement = new OrderByElement();
+		OrderByElement orderByElement = new OrderByElement();
 		orderByElement.setAsc(order.getDirection().isAscending());
 		orderByElement.setAscDescPresent(true);
 
@@ -277,8 +370,7 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 
 		boolean functionIndicator = property.contains("(");
 
-		String reference = qualifyReference && !functionIndicator && StringUtils.hasText(alias)
-				? String.format("%s.%s", alias, property)
+		String reference = qualifyReference && !functionIndicator && StringUtils.hasText(alias) ? alias + "." + property
 				: property;
 		Expression orderExpression = order.isIgnoreCase() ? getJSqlLower(reference) : new Column(reference);
 		orderByElement.setExpression(orderExpression);
@@ -287,73 +379,7 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 
 	@Override
 	public String detectAlias() {
-		return detectAlias(this.query.getQueryString());
-	}
-
-	/**
-	 * Resolves the alias for the entity to be retrieved from the given JPA query. Note that you only provide valid Query
-	 * strings. Things such as <code>from User u</code> will throw an {@link IllegalArgumentException}.
-	 *
-	 * @param query must not be {@literal null}.
-	 * @return Might return {@literal null}.
-	 */
-	@Nullable
-	private String detectAlias(String query) {
-
-		if (ParsedType.MERGE.equals(this.parsedType)) {
-
-			Merge mergeStatement = (Merge) statement;
-			return detectAlias(mergeStatement);
-
-		} else if (ParsedType.SELECT.equals(this.parsedType)) {
-
-			Select selectStatement = (Select) statement;
-
-			/*
-			 * For all the other types ({@link ValuesStatement} and {@link SetOperationList}) it does not make sense to provide
-			 * alias since:
-			 * ValuesStatement has no alias
-			 * SetOperation can have multiple alias for each operation item
-			 */
-			if (!(selectStatement instanceof PlainSelect selectBody)) {
-				return null;
-			}
-
-			return detectAlias(selectBody);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Resolves the alias for the entity to be retrieved from the given {@link PlainSelect}. Note that you only provide
-	 * valid Query strings. Things such as <code>from User u</code> will throw an {@link IllegalArgumentException}.
-	 *
-	 * @param selectBody must not be {@literal null}.
-	 * @return Might return {@literal null}.
-	 */
-	@Nullable
-	private String detectAlias(PlainSelect selectBody) {
-
-		if (selectBody.getFromItem() == null) {
-			return null;
-		}
-
-		Alias alias = selectBody.getFromItem().getAlias();
-		return alias == null ? null : alias.getName();
-	}
-
-	/**
-	 * Resolves the alias for the given {@link Merge} statement.
-	 *
-	 * @param mergeStatement must not be {@literal null}.
-	 * @return Might return {@literal null}.
-	 */
-	@Nullable
-	private String detectAlias(Merge mergeStatement) {
-
-		Alias alias = mergeStatement.getUsingAlias();
-		return alias == null ? null : alias.getName();
+		return this.primaryAlias;
 	}
 
 	@Override
@@ -365,7 +391,7 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 
 		Assert.hasText(this.query.getQueryString(), "OriginalQuery must not be null or empty");
 
-		Select selectStatement = parseSelectStatement(this.query.getQueryString());
+		Select selectStatement = parseStatement(this.query.getQueryString());
 
 		/*
 		  We only support count queries for {@link PlainSelect}.
@@ -397,66 +423,22 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	}
 
 	@Override
+	public boolean hasConstructorExpression() {
+		return hasConstructorExpression;
+	}
+
+	@Override
 	public String getProjection() {
-
-		if (this.parsedType != ParsedType.SELECT) {
-			return "";
-		}
-
-		Assert.hasText(query.getQueryString(), "Query must not be null or empty");
-
-		Select selectStatement = (Select) statement;
-
-		if (selectStatement instanceof Values) {
-			return "";
-		}
-
-		Select selectBody = selectStatement;
-
-		if (selectStatement instanceof SetOperationList setOperationList) {
-
-			// using the first one since for setoperations the projection has to be the same
-			selectBody = setOperationList.getSelects().get(0);
-
-			if (!(selectBody instanceof PlainSelect)) {
-				return "";
-			}
-		}
-
-		return ((PlainSelect) selectBody).getSelectItems() //
-				.stream() //
-				.map(Object::toString) //
-				.collect(Collectors.joining(", ")).trim();
+		return this.projection;
 	}
 
 	@Override
 	public Set<String> getJoinAliases() {
-		return this.getJoinAliases(this.query.getQueryString());
+		return joinAliases;
 	}
 
-	/**
-	 * Parses a query string with JSqlParser.
-	 *
-	 * @param query the query to parse
-	 * @return the parsed query
-	 */
-	private <T extends Statement> T parseSelectStatement(String query, Class<T> classOfT) {
-
-		try {
-			return classOfT.cast(CCJSqlParserUtil.parse(query));
-		} catch (JSQLParserException e) {
-			throw new IllegalArgumentException("The query you provided is not a valid SQL Query", e);
-		}
-	}
-
-	/**
-	 * Parses a query string with JSqlParser.
-	 *
-	 * @param query the query to parse
-	 * @return the parsed query
-	 */
-	private Select parseSelectStatement(String query) {
-		return parseSelectStatement(query, Select.class);
+	public Set<String> getSelectionAliases() {
+		return selectAliases;
 	}
 
 	/**
