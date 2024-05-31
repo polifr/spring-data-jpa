@@ -43,13 +43,13 @@ public class DefaultQueryEnhancer implements QueryEnhancer {
 	}
 
 	@Override
-	public String applySorting(Sort sort, @Nullable String alias) {
-		return QueryUtils.applySorting(this.query.getQueryString(), sort, alias);
+	public String applySorting(Sort sort) {
+		return QueryUtils.applySorting(this.query.getQueryString(), sort, this.alias);
 	}
 
 	@Override
-	public String detectAlias() {
-		return this.alias;
+	public String applySorting(Sort sort, @Nullable String alias) {
+		return QueryUtils.applySorting(this.query.getQueryString(), sort, alias);
 	}
 
 	@Override
@@ -60,6 +60,11 @@ public class DefaultQueryEnhancer implements QueryEnhancer {
 	@Override
 	public boolean hasConstructorExpression() {
 		return this.hasConstructorExpression;
+	}
+
+	@Override
+	public String detectAlias() {
+		return this.alias;
 	}
 
 	@Override

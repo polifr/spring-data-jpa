@@ -65,8 +65,8 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	private final Statement statement;
 	private final ParsedType parsedType;
 	private final boolean hasConstructorExpression;
-	private final String projection;
 	private final @Nullable String primaryAlias;
+	private final String projection;
 	private final Set<String> joinAliases;
 	private final Set<String> selectAliases;
 
@@ -79,11 +79,11 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 		this.statement = parseStatement(query.getQueryString(), Statement.class);
 
 		this.parsedType = detectParsedType(statement);
-		this.primaryAlias = detectAlias(this.parsedType, this.statement);
 		this.hasConstructorExpression = QueryUtils.hasConstructorExpression(query.getQueryString());
-		this.joinAliases = Collections.unmodifiableSet(getJoinAliases(this.statement));
-		this.selectAliases = Collections.unmodifiableSet(getSelectionAliases(this.statement));
+		this.primaryAlias = detectAlias(this.parsedType, this.statement);
 		this.projection = detectProjection(this.statement);
+		this.selectAliases = Collections.unmodifiableSet(getSelectionAliases(this.statement));
+		this.joinAliases = Collections.unmodifiableSet(getJoinAliases(this.statement));
 	}
 
 	/**
@@ -113,7 +113,9 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 		if (ParsedType.MERGE.equals(parsedType)) {
 
 			Merge mergeStatement = (Merge) statement;
-			return detectAlias(mergeStatement);
+
+			Alias alias = mergeStatement.getUsingAlias();
+			return alias == null ? null : alias.getName();
 
 		} else if (ParsedType.SELECT.equals(parsedType)) {
 
@@ -129,41 +131,15 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 				return null;
 			}
 
-			return detectAlias(selectBody);
+			if (selectBody.getFromItem() == null) {
+				return null;
+			}
+
+			Alias alias = selectBody.getFromItem().getAlias();
+			return alias == null ? null : alias.getName();
 		}
 
 		return null;
-	}
-
-	/**
-	 * Resolves the alias for the entity to be retrieved from the given {@link PlainSelect}. Note that you only provide
-	 * valid Query strings. Things such as <code>from User u</code> will throw an {@link IllegalArgumentException}.
-	 *
-	 * @param selectBody must not be {@literal null}.
-	 * @return Might return {@literal null}.
-	 */
-	@Nullable
-	private static String detectAlias(PlainSelect selectBody) {
-
-		if (selectBody.getFromItem() == null) {
-			return null;
-		}
-
-		Alias alias = selectBody.getFromItem().getAlias();
-		return alias == null ? null : alias.getName();
-	}
-
-	/**
-	 * Resolves the alias for the given {@link Merge} statement.
-	 *
-	 * @param mergeStatement must not be {@literal null}.
-	 * @return Might return {@literal null}.
-	 */
-	@Nullable
-	private static String detectAlias(Merge mergeStatement) {
-
-		Alias alias = mergeStatement.getUsingAlias();
-		return alias == null ? null : alias.getName();
 	}
 
 	/**
@@ -217,15 +193,13 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 
 		if (statement instanceof Select select) {
 
-			Select selectStatement = (Select) statement;
-
-			if (selectStatement instanceof Values) {
+			if (select instanceof Values) {
 				return "";
 			}
 
-			Select selectBody = selectStatement;
+			Select selectBody = select;
 
-			if (selectStatement instanceof SetOperationList setOperationList) {
+			if (select instanceof SetOperationList setOperationList) {
 
 				// using the first one since for setoperations the projection has to be the same
 				selectBody = setOperationList.getSelects().get(0);
@@ -267,6 +241,11 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	}
 
 	@Override
+	public String applySorting(Sort sort) {
+		return applySorting(sort, detectAlias());
+	}
+
+	@Override
 	public String applySorting(Sort sort, @Nullable String alias) {
 
 		String queryString = query.getQueryString();
@@ -297,6 +276,52 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 		selectBody.getOrderByElements().addAll(orderByElements);
 
 		return selectStatement.toString();
+	}
+
+	@Override
+	public String createCountQueryFor(@Nullable String countProjection) {
+
+		if (this.parsedType != ParsedType.SELECT) {
+			return this.query.getQueryString();
+		}
+
+		Assert.hasText(this.query.getQueryString(), "OriginalQuery must not be null or empty");
+
+		Select selectStatement = parseStatement(this.query.getQueryString());
+
+		/*
+		  We only support count queries for {@link PlainSelect}.
+		 */
+		if (!(selectStatement instanceof PlainSelect selectBody)) {
+			return this.query.getQueryString();
+		}
+
+		// remove order by
+		selectBody.setOrderByElements(null);
+
+		if (StringUtils.hasText(countProjection)) {
+
+			Function jSqlCount = getJSqlCount(Collections.singletonList(countProjection), false);
+			selectBody.setSelectItems(Collections.singletonList(SelectItem.from(jSqlCount)));
+			return selectBody.toString();
+		}
+
+		boolean distinct = selectBody.getDistinct() != null;
+		selectBody.setDistinct(null); // reset possible distinct
+
+		String tableAlias = null;
+
+		if (selectBody.getFromItem() != null) {
+			Alias alias = selectBody.getFromItem().getAlias();
+			tableAlias = alias == null ? null : alias.getName();
+		}
+
+		String countProperty = countPropertyNameForSelection(selectBody.getSelectItems(), distinct, tableAlias);
+
+		Function jSqlCount = getJSqlCount(Collections.singletonList(countProperty), distinct);
+		selectBody.setSelectItems(Collections.singletonList(SelectItem.from(jSqlCount)));
+
+		return selectBody.toString();
 	}
 
 	/**
@@ -378,53 +403,13 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	}
 
 	@Override
-	public String detectAlias() {
-		return this.primaryAlias;
-	}
-
-	@Override
-	public String createCountQueryFor(@Nullable String countProjection) {
-
-		if (this.parsedType != ParsedType.SELECT) {
-			return this.query.getQueryString();
-		}
-
-		Assert.hasText(this.query.getQueryString(), "OriginalQuery must not be null or empty");
-
-		Select selectStatement = parseStatement(this.query.getQueryString());
-
-		/*
-		  We only support count queries for {@link PlainSelect}.
-		 */
-		if (!(selectStatement instanceof PlainSelect selectBody)) {
-			return this.query.getQueryString();
-		}
-
-		// remove order by
-		selectBody.setOrderByElements(null);
-
-		if (StringUtils.hasText(countProjection)) {
-
-			Function jSqlCount = getJSqlCount(Collections.singletonList(countProjection), false);
-			selectBody.setSelectItems(Collections.singletonList(SelectItem.from(jSqlCount)));
-			return selectBody.toString();
-		}
-
-		boolean distinct = selectBody.getDistinct() != null;
-		selectBody.setDistinct(null); // reset possible distinct
-
-		String tableAlias = detectAlias(selectBody);
-		String countProperty = countPropertyNameForSelection(selectBody.getSelectItems(), distinct, tableAlias);
-
-		Function jSqlCount = getJSqlCount(Collections.singletonList(countProperty), distinct);
-		selectBody.setSelectItems(Collections.singletonList(SelectItem.from(jSqlCount)));
-
-		return selectBody.toString();
-	}
-
-	@Override
 	public boolean hasConstructorExpression() {
 		return hasConstructorExpression;
+	}
+
+	@Override
+	public String detectAlias() {
+		return this.primaryAlias;
 	}
 
 	@Override
@@ -441,17 +426,9 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 		return selectAliases;
 	}
 
-	/**
-	 * Checks whether a given projection only contains a single column definition (aka without functions, etc.)
-	 *
-	 * @param projection the projection to analyse
-	 * @return <code>true</code> when the projection only contains a single column definition otherwise <code>false</code>
-	 */
-	private boolean onlyASingleColumnProjection(List<SelectItem<?>> projection) {
-
-		// this is unfortunately the only way to check without any hacky & hard string regex magic
-		return projection.size() == 1 && projection.get(0) instanceof SelectItem<?>
-				&& ((projection.get(0)).getExpression()) instanceof Column;
+	@Override
+	public DeclaredQuery getQuery() {
+		return this.query;
 	}
 
 	/**
@@ -476,9 +453,17 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 		return query.isNativeQuery() ? (distinct ? "*" : "1") : tableAlias == null ? "*" : tableAlias;
 	}
 
-	@Override
-	public DeclaredQuery getQuery() {
-		return this.query;
+	/**
+	 * Checks whether a given projection only contains a single column definition (aka without functions, etc.)
+	 *
+	 * @param projection the projection to analyse
+	 * @return <code>true</code> when the projection only contains a single column definition otherwise <code>false</code>
+	 */
+	private boolean onlyASingleColumnProjection(List<SelectItem<?>> projection) {
+
+		// this is unfortunately the only way to check without any hacky & hard string regex magic
+		return projection.size() == 1 && projection.get(0) instanceof SelectItem<?>
+				&& ((projection.get(0)).getExpression()) instanceof Column;
 	}
 
 	/**

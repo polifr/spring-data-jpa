@@ -35,9 +35,7 @@ public interface QueryEnhancer {
 	 * @param sort the sort specification to apply.
 	 * @return the modified query string.
 	 */
-	default String applySorting(Sort sort) {
-		return applySorting(sort, detectAlias());
-	}
+	String applySorting(Sort sort);
 
 	/**
 	 * Adds {@literal order by} clause to the JPQL query.
@@ -46,15 +44,8 @@ public interface QueryEnhancer {
 	 * @param alias the alias to be used in the order by clause. May be {@literal null} or empty.
 	 * @return the modified query string.
 	 */
+	@Deprecated
 	String applySorting(Sort sort, @Nullable String alias);
-
-	/**
-	 * Resolves the alias for the entity to be retrieved from the given JPA query.
-	 *
-	 * @return Might return {@literal null}.
-	 */
-	@Nullable
-	String detectAlias();
 
 	/**
 	 * Creates a count projected query from the given original query.
@@ -81,6 +72,14 @@ public interface QueryEnhancer {
 	boolean hasConstructorExpression();
 
 	/**
+	 * Resolves the alias for the entity to be retrieved from the given JPA query.
+	 *
+	 * @return Might return {@literal null}.
+	 */
+	@Nullable
+	String detectAlias();
+
+	/**
 	 * Returns the projection part of the query, i.e. everything between {@code select} and {@code from}.
 	 *
 	 * @return the projection part of the query.
@@ -92,6 +91,7 @@ public interface QueryEnhancer {
 	 *
 	 * @return the join aliases of the query.
 	 */
+	@Deprecated(forRemoval = true)
 	Set<String> getJoinAliases();
 
 	/**
