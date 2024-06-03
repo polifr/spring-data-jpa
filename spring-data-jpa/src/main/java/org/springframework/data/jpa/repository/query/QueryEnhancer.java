@@ -30,41 +30,6 @@ import org.springframework.lang.Nullable;
 public interface QueryEnhancer {
 
 	/**
-	 * Adds {@literal order by} clause to the JPQL query. Uses the first alias to bind the sorting property to.
-	 *
-	 * @param sort the sort specification to apply.
-	 * @return the modified query string.
-	 */
-	String applySorting(Sort sort);
-
-	/**
-	 * Adds {@literal order by} clause to the JPQL query.
-	 *
-	 * @param sort the sort specification to apply.
-	 * @param alias the alias to be used in the order by clause. May be {@literal null} or empty.
-	 * @return the modified query string.
-	 */
-	@Deprecated
-	String applySorting(Sort sort, @Nullable String alias);
-
-	/**
-	 * Creates a count projected query from the given original query.
-	 *
-	 * @return Guaranteed to be not {@literal null}.
-	 */
-	default String createCountQueryFor() {
-		return createCountQueryFor(null);
-	}
-
-	/**
-	 * Creates a count projected query from the given original query using the provided <code>countProjection</code>.
-	 *
-	 * @param countProjection may be {@literal null}.
-	 * @return a query String to be used a count query for pagination. Guaranteed to be not {@literal null}.
-	 */
-	String createCountQueryFor(@Nullable String countProjection);
-
-	/**
 	 * Returns whether the given JPQL query contains a constructor expression.
 	 *
 	 * @return whether the given JPQL query contains a constructor expression.
@@ -101,4 +66,39 @@ public interface QueryEnhancer {
 	 */
 	@Deprecated(forRemoval = true)
 	DeclaredQuery getQuery();
+
+	/**
+	 * Adds {@literal order by} clause to the JPQL query. Uses the first alias to bind the sorting property to.
+	 *
+	 * @param sort the sort specification to apply.
+	 * @return the modified query string.
+	 */
+	String applySorting(Sort sort);
+
+	/**
+	 * Adds {@literal order by} clause to the JPQL query.
+	 *
+	 * @param sort the sort specification to apply.
+	 * @param alias the alias to be used in the order by clause. May be {@literal null} or empty.
+	 * @return the modified query string.
+	 */
+	@Deprecated
+	String applySorting(Sort sort, @Nullable String alias);
+
+	/**
+	 * Creates a count projected query from the given original query.
+	 *
+	 * @return Guaranteed to be not {@literal null}.
+	 */
+	default String createCountQueryFor() {
+		return createCountQueryFor(null);
+	}
+
+	/**
+	 * Creates a count projected query from the given original query using the provided <code>countProjection</code>.
+	 *
+	 * @param countProjection may be {@literal null}.
+	 * @return a query String to be used a count query for pagination. Guaranteed to be not {@literal null}.
+	 */
+	String createCountQueryFor(@Nullable String countProjection);
 }

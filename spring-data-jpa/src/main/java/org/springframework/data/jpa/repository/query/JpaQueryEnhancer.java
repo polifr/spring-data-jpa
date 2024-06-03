@@ -140,49 +140,6 @@ class JpaQueryEnhancer implements QueryEnhancer {
 	}
 
 	/**
-	 * Adds an {@literal order by} clause to the JPA query.
-	 *
-	 * @param sort the sort specification to apply.
-	 * @return
-	 */
-	@Override
-	public String applySorting(Sort sort) {
-		return render(sortFunction.apply(sort, detectAlias()).visit(context));
-	}
-
-	/**
-	 * Because the parser can find the alias of the FROM clause, there is no need to "find it" in advance.
-	 *
-	 * @param sort the sort specification to apply.
-	 * @param alias IGNORED
-	 * @return
-	 */
-	@Override
-	public String applySorting(Sort sort, String alias) {
-		return applySorting(sort);
-	}
-
-	/**
-	 * Creates a count query from the original query, with no count projection.
-	 *
-	 * @return Guaranteed to be not {@literal null};
-	 */
-	@Override
-	public String createCountQueryFor() {
-		return createCountQueryFor(null);
-	}
-
-	/**
-	 * Create a count query from the original query, with potential custom projection.
-	 *
-	 * @param countProjection may be {@literal null}.
-	 */
-	@Override
-	public String createCountQueryFor(@Nullable String countProjection) {
-		return render(countQueryFunction.apply(countProjection, detectAlias()).visit(context));
-	}
-
-	/**
 	 * Checks if the select clause has a new constructor instantiation in the JPA query.
 	 *
 	 * @return Guaranteed to return {@literal true} or {@literal false}.
@@ -227,6 +184,49 @@ class JpaQueryEnhancer implements QueryEnhancer {
 	@Override
 	public DeclaredQuery getQuery() {
 		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Adds an {@literal order by} clause to the JPA query.
+	 *
+	 * @param sort the sort specification to apply.
+	 * @return
+	 */
+	@Override
+	public String applySorting(Sort sort) {
+		return render(sortFunction.apply(sort, detectAlias()).visit(context));
+	}
+
+	/**
+	 * Because the parser can find the alias of the FROM clause, there is no need to "find it" in advance.
+	 *
+	 * @param sort the sort specification to apply.
+	 * @param alias IGNORED
+	 * @return
+	 */
+	@Override
+	public String applySorting(Sort sort, String alias) {
+		return applySorting(sort);
+	}
+
+	/**
+	 * Creates a count query from the original query, with no count projection.
+	 *
+	 * @return Guaranteed to be not {@literal null};
+	 */
+	@Override
+	public String createCountQueryFor() {
+		return createCountQueryFor(null);
+	}
+
+	/**
+	 * Create a count query from the original query, with potential custom projection.
+	 *
+	 * @param countProjection may be {@literal null}.
+	 */
+	@Override
+	public String createCountQueryFor(@Nullable String countProjection) {
+		return render(countQueryFunction.apply(countProjection, detectAlias()).visit(context));
 	}
 
 	/**

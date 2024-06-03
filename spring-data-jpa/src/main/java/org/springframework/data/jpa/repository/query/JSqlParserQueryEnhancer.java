@@ -28,6 +28,7 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.merge.Merge;
+import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
@@ -36,17 +37,21 @@ import net.sf.jsqlparser.statement.select.SetOperationList;
 import net.sf.jsqlparser.statement.select.Values;
 import net.sf.jsqlparser.statement.update.Update;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.StringJoiner;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.SerializationUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -69,6 +74,7 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	private final String projection;
 	private final Set<String> joinAliases;
 	private final Set<String> selectAliases;
+	private final byte[] serialized;
 
 	/**
 	 * @param query the query we want to enhance. Must not be {@literal null}.
@@ -84,6 +90,7 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 		this.projection = detectProjection(this.statement);
 		this.selectAliases = Collections.unmodifiableSet(getSelectionAliases(this.statement));
 		this.joinAliases = Collections.unmodifiableSet(getJoinAliases(this.statement));
+		this.serialized = SerializationUtils.serialize(this.statement);
 	}
 
 	/**
@@ -117,7 +124,9 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 			Alias alias = mergeStatement.getUsingAlias();
 			return alias == null ? null : alias.getName();
 
-		} else if (ParsedType.SELECT.equals(parsedType)) {
+		}
+
+		if (ParsedType.SELECT.equals(parsedType)) {
 
 			Select selectStatement = (Select) statement;
 
@@ -149,21 +158,20 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	 */
 	private static Set<String> getSelectionAliases(Statement statement) {
 
-		if (statement instanceof PlainSelect select) {
-
-			if (CollectionUtils.isEmpty(select.getSelectItems())) {
-				return Collections.emptySet();
-			}
-
-			return select.getSelectItems().stream() //
-					.filter(SelectItem.class::isInstance) //
-					.map(SelectItem::getAlias) //
-					.filter(Objects::nonNull) //
-					.map(Alias::getName) //
-					.collect(Collectors.toSet());
+		if (!(statement instanceof PlainSelect select) || CollectionUtils.isEmpty(select.getSelectItems())) {
+			return Collections.emptySet();
 		}
 
-		return Collections.emptySet();
+		Set<String> set = new HashSet<>(select.getSelectItems().size());
+
+		for (SelectItem<?> selectItem : select.getSelectItems()) {
+			Alias alias = selectItem.getAlias();
+			if (alias != null) {
+				set.add(alias.getName());
+			}
+		}
+
+		return set;
 	}
 
 	/**
@@ -173,49 +181,51 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	 */
 	private static Set<String> getJoinAliases(Statement statement) {
 
-		if (statement instanceof PlainSelect selectBody) {
-
-			if (CollectionUtils.isEmpty(selectBody.getJoins())) {
-				return Collections.emptySet();
-			}
-
-			return selectBody.getJoins().stream() //
-					.map(join -> join.getRightItem().getAlias()) //
-					.filter(Objects::nonNull) //
-					.map(Alias::getName) //
-					.collect(Collectors.toSet());
+		if (!(statement instanceof PlainSelect selectBody) || CollectionUtils.isEmpty(selectBody.getJoins())) {
+			return Collections.emptySet();
 		}
 
-		return Collections.emptySet();
+		Set<String> set = new HashSet<>(selectBody.getJoins().size());
+
+		for (Join join : selectBody.getJoins()) {
+			Alias alias = join.getRightItem().getAlias();
+			if (alias != null) {
+				set.add(alias.getName());
+			}
+		}
+
+		return set;
+
 	}
 
 	private static String detectProjection(Statement statement) {
 
-		if (statement instanceof Select select) {
-
-			if (select instanceof Values) {
-				return "";
-			}
-
-			Select selectBody = select;
-
-			if (select instanceof SetOperationList setOperationList) {
-
-				// using the first one since for setoperations the projection has to be the same
-				selectBody = setOperationList.getSelects().get(0);
-
-				if (!(selectBody instanceof PlainSelect)) {
-					return "";
-				}
-			}
-
-			return ((PlainSelect) selectBody).getSelectItems() //
-					.stream() //
-					.map(Object::toString) //
-					.collect(Collectors.joining(", ")).trim();
+		if (!(statement instanceof Select select)) {
+			return "";
 		}
 
-		return "";
+		if (select instanceof Values) {
+			return "";
+		}
+
+		Select selectBody = select;
+
+		if (select instanceof SetOperationList setOperationList) {
+
+			// using the first one since for setoperations the projection has to be the same
+			selectBody = setOperationList.getSelects().get(0);
+
+			if (!(selectBody instanceof PlainSelect)) {
+				return "";
+			}
+		}
+
+		StringJoiner joiner = new StringJoiner(", ");
+		for (SelectItem<?> selectItem : ((PlainSelect) selectBody).getSelectItems()) {
+			joiner.add(selectItem.toString());
+		}
+		return joiner.toString().trim();
+
 	}
 
 	/**
@@ -238,168 +248,6 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 		} else {
 			return ParsedType.OTHER;
 		}
-	}
-
-	@Override
-	public String applySorting(Sort sort) {
-		return applySorting(sort, detectAlias());
-	}
-
-	@Override
-	public String applySorting(Sort sort, @Nullable String alias) {
-
-		String queryString = query.getQueryString();
-		Assert.hasText(queryString, "Query must not be null or empty");
-
-		if (this.parsedType != ParsedType.SELECT || sort.isUnsorted()) {
-			return queryString;
-		}
-
-		Select selectStatement = parseStatement(queryString);
-
-		if (selectStatement instanceof SetOperationList setOperationList) {
-			return applySortingToSetOperationList(setOperationList, sort);
-		}
-
-		if (!(selectStatement instanceof PlainSelect selectBody)) {
-			return queryString;
-		}
-
-		List<OrderByElement> orderByElements = sort.stream() //
-				.map(order -> getOrderClause(joinAliases, selectAliases, alias, order)) //
-				.toList();
-
-		if (CollectionUtils.isEmpty(selectBody.getOrderByElements())) {
-			selectBody.setOrderByElements(new ArrayList<>());
-		}
-
-		selectBody.getOrderByElements().addAll(orderByElements);
-
-		return selectStatement.toString();
-	}
-
-	@Override
-	public String createCountQueryFor(@Nullable String countProjection) {
-
-		if (this.parsedType != ParsedType.SELECT) {
-			return this.query.getQueryString();
-		}
-
-		Assert.hasText(this.query.getQueryString(), "OriginalQuery must not be null or empty");
-
-		Select selectStatement = parseStatement(this.query.getQueryString());
-
-		/*
-		  We only support count queries for {@link PlainSelect}.
-		 */
-		if (!(selectStatement instanceof PlainSelect selectBody)) {
-			return this.query.getQueryString();
-		}
-
-		// remove order by
-		selectBody.setOrderByElements(null);
-
-		if (StringUtils.hasText(countProjection)) {
-
-			Function jSqlCount = getJSqlCount(Collections.singletonList(countProjection), false);
-			selectBody.setSelectItems(Collections.singletonList(SelectItem.from(jSqlCount)));
-			return selectBody.toString();
-		}
-
-		boolean distinct = selectBody.getDistinct() != null;
-		selectBody.setDistinct(null); // reset possible distinct
-
-		String tableAlias = null;
-
-		if (selectBody.getFromItem() != null) {
-			Alias alias = selectBody.getFromItem().getAlias();
-			tableAlias = alias == null ? null : alias.getName();
-		}
-
-		String countProperty = countPropertyNameForSelection(selectBody.getSelectItems(), distinct, tableAlias);
-
-		Function jSqlCount = getJSqlCount(Collections.singletonList(countProperty), distinct);
-		selectBody.setSelectItems(Collections.singletonList(SelectItem.from(jSqlCount)));
-
-		return selectBody.toString();
-	}
-
-	/**
-	 * Parses a query string with JSqlParser.
-	 *
-	 * @param query the query to parse
-	 * @return the parsed query
-	 */
-	private Select parseStatement(String query) {
-		return parseStatement(query, Select.class);
-	}
-
-	/**
-	 * Returns the {@link SetOperationList} as a string query with {@link Sort}s applied in the right order.
-	 *
-	 * @param setOperationListStatement
-	 * @param sort
-	 * @return
-	 */
-	private String applySortingToSetOperationList(SetOperationList setOperationListStatement, Sort sort) {
-
-		// special case: ValuesStatements are detected as nested OperationListStatements
-		if (setOperationListStatement.getSelects().stream().anyMatch(Values.class::isInstance)) {
-			return setOperationListStatement.toString();
-		}
-
-		// if (CollectionUtils.isEmpty(setOperationListStatement.getOrderByElements())) {
-		if (setOperationListStatement.getOrderByElements() == null) {
-			setOperationListStatement.setOrderByElements(new ArrayList<>());
-		}
-
-		List<OrderByElement> orderByElements = sort.stream() //
-				.map(order -> getOrderClause(Collections.emptySet(), Collections.emptySet(), null, order)) //
-				.toList();
-		setOperationListStatement.getOrderByElements().addAll(orderByElements);
-
-		return setOperationListStatement.toString();
-	}
-
-	/**
-	 * Returns the order clause for the given {@link Sort.Order}. Will prefix the clause with the given alias if the
-	 * referenced property refers to a join alias, i.e. starts with {@code $alias.}.
-	 *
-	 * @param joinAliases the join aliases of the original query. Must not be {@literal null}.
-	 * @param alias the alias for the root entity. May be {@literal null}.
-	 * @param order the order object to build the clause for. Must not be {@literal null}.
-	 * @return a {@link OrderByElement} containing an order clause. Guaranteed to be not {@literal null}.
-	 */
-	private OrderByElement getOrderClause(Set<String> joinAliases, Set<String> selectionAliases, @Nullable String alias,
-			Sort.Order order) {
-
-		OrderByElement orderByElement = new OrderByElement();
-		orderByElement.setAsc(order.getDirection().isAscending());
-		orderByElement.setAscDescPresent(true);
-
-		final String property = order.getProperty();
-
-		checkSortExpression(order);
-
-		if (selectionAliases.contains(property)) {
-			Expression orderExpression = order.isIgnoreCase() ? getJSqlLower(property) : new Column(property);
-
-			orderByElement.setExpression(orderExpression);
-			return orderByElement;
-		}
-
-		boolean qualifyReference = joinAliases //
-				.parallelStream() //
-				.map(joinAlias -> joinAlias.concat(".")) //
-				.noneMatch(property::startsWith);
-
-		boolean functionIndicator = property.contains("(");
-
-		String reference = qualifyReference && !functionIndicator && StringUtils.hasText(alias) ? alias + "." + property
-				: property;
-		Expression orderExpression = order.isIgnoreCase() ? getJSqlLower(reference) : new Column(reference);
-		orderByElement.setExpression(orderExpression);
-		return orderByElement;
 	}
 
 	@Override
@@ -431,6 +279,165 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 		return this.query;
 	}
 
+	@Override
+	public String applySorting(Sort sort) {
+		return applySorting(sort, detectAlias());
+	}
+
+	@Override
+	public String applySorting(Sort sort, @Nullable String alias) {
+
+		String queryString = query.getQueryString();
+		Assert.hasText(queryString, "Query must not be null or empty");
+
+		if (this.parsedType != ParsedType.SELECT || sort.isUnsorted()) {
+			return queryString;
+		}
+
+		return applySorting((Select) deserialize(this.serialized), sort, alias);
+	}
+
+	private String applySorting(Select selectStatement, Sort sort, @Nullable String alias) {
+
+		if (selectStatement instanceof SetOperationList setOperationList) {
+			return applySortingToSetOperationList(setOperationList, sort);
+		}
+
+		if (!(selectStatement instanceof PlainSelect selectBody)) {
+			return selectStatement.toString();
+		}
+
+		List<OrderByElement> orderByElements = new ArrayList<>(16);
+		for (Sort.Order order : sort) {
+			orderByElements.add(getOrderClause(joinAliases, selectAliases, alias, order));
+		}
+
+		if (CollectionUtils.isEmpty(selectBody.getOrderByElements())) {
+			selectBody.setOrderByElements(orderByElements);
+		} else {
+			selectBody.getOrderByElements().addAll(orderByElements);
+		}
+
+		return selectStatement.toString();
+	}
+
+	@Override
+	public String createCountQueryFor(@Nullable String countProjection) {
+
+		if (this.parsedType != ParsedType.SELECT) {
+			return this.query.getQueryString();
+		}
+
+		Assert.hasText(this.query.getQueryString(), "OriginalQuery must not be null or empty");
+
+		Statement statement = (Statement) deserialize(this.serialized);
+		/*
+		  We only support count queries for {@link PlainSelect}.
+		 */
+		if (!(statement instanceof PlainSelect selectBody)) {
+			return this.query.getQueryString();
+		}
+
+		return createCountQueryFor(this.query, selectBody, countProjection);
+	}
+
+	private static String createCountQueryFor(DeclaredQuery query, PlainSelect selectBody,
+			@Nullable String countProjection) {
+
+		// remove order by
+		selectBody.setOrderByElements(null);
+
+		if (StringUtils.hasText(countProjection)) {
+
+			selectBody.setSelectItems(
+					Collections.singletonList(SelectItem.from(getJSqlCount(Collections.singletonList(countProjection), false))));
+		} else {
+
+			boolean distinct = selectBody.getDistinct() != null;
+			selectBody.setDistinct(null); // reset possible distinct
+
+			Function jSqlCount = getJSqlCount(
+					Collections.singletonList(countPropertyNameForSelection(selectBody.getSelectItems(), distinct)), distinct);
+			selectBody.setSelectItems(Collections.singletonList(SelectItem.from(jSqlCount)));
+		}
+
+		return selectBody.toString();
+	}
+
+	/**
+	 * Returns the {@link SetOperationList} as a string query with {@link Sort}s applied in the right order.
+	 *
+	 * @param setOperationListStatement
+	 * @param sort
+	 * @return
+	 */
+	private static String applySortingToSetOperationList(SetOperationList setOperationListStatement, Sort sort) {
+
+		// special case: ValuesStatements are detected as nested OperationListStatements
+		for (Select select : setOperationListStatement.getSelects()) {
+			if (select instanceof Values) {
+				return setOperationListStatement.toString();
+			}
+		}
+
+		List<OrderByElement> orderByElements = new ArrayList<>(16);
+		for (Sort.Order order : sort) {
+			orderByElements.add(getOrderClause(Collections.emptySet(), Collections.emptySet(), null, order));
+		}
+
+		if (setOperationListStatement.getOrderByElements() == null) {
+			setOperationListStatement.setOrderByElements(orderByElements);
+		} else {
+			setOperationListStatement.getOrderByElements().addAll(orderByElements);
+		}
+
+		return setOperationListStatement.toString();
+	}
+
+	/**
+	 * Returns the order clause for the given {@link Sort.Order}. Will prefix the clause with the given alias if the
+	 * referenced property refers to a join alias, i.e. starts with {@code $alias.}.
+	 *
+	 * @param joinAliases the join aliases of the original query. Must not be {@literal null}.
+	 * @param alias the alias for the root entity. May be {@literal null}.
+	 * @param order the order object to build the clause for. Must not be {@literal null}.
+	 * @return a {@link OrderByElement} containing an order clause. Guaranteed to be not {@literal null}.
+	 */
+	private static OrderByElement getOrderClause(Set<String> joinAliases, Set<String> selectionAliases,
+			@Nullable String alias, Sort.Order order) {
+
+		OrderByElement orderByElement = new OrderByElement();
+		orderByElement.setAsc(order.getDirection().isAscending());
+		orderByElement.setAscDescPresent(true);
+
+		String property = order.getProperty();
+
+		checkSortExpression(order);
+
+		if (selectionAliases.contains(property)) {
+
+			Expression orderExpression = order.isIgnoreCase() ? getJSqlLower(property) : new Column(property);
+			orderByElement.setExpression(orderExpression);
+			return orderByElement;
+		}
+
+		boolean qualifyReference = true;
+		for (String joinAlias : joinAliases) {
+			if (property.startsWith(joinAlias.concat("."))) {
+				qualifyReference = false;
+				break;
+			}
+		}
+
+		boolean functionIndicator = property.contains("(");
+
+		String reference = qualifyReference && !functionIndicator && StringUtils.hasText(alias) ? alias + "." + property
+				: property;
+		Expression orderExpression = order.isIgnoreCase() ? getJSqlLower(reference) : new Column(reference);
+		orderByElement.setExpression(orderExpression);
+		return orderByElement;
+	}
+
 	/**
 	 * Get the count property if present in {@link SelectItem slected items}, {@literal *} or {@literal 1} for native ones
 	 * and {@literal *} or the given {@literal tableAlias}.
@@ -440,8 +447,7 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	 * @param tableAlias the table alias which can be {@literal null}.
 	 * @return
 	 */
-	private String countPropertyNameForSelection(List<SelectItem<?>> selectItems, boolean distinct,
-			@Nullable String tableAlias) {
+	private static String countPropertyNameForSelection(List<SelectItem<?>> selectItems, boolean distinct) {
 
 		if (onlyASingleColumnProjection(selectItems)) {
 
@@ -450,16 +456,16 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 			return column.getFullyQualifiedName();
 		}
 
-		return query.isNativeQuery() ? (distinct ? "*" : "1") : tableAlias == null ? "*" : tableAlias;
+		return (distinct ? "*" : "1");
 	}
 
 	/**
 	 * Checks whether a given projection only contains a single column definition (aka without functions, etc.)
 	 *
-	 * @param projection the projection to analyse
-	 * @return <code>true</code> when the projection only contains a single column definition otherwise <code>false</code>
+	 * @param projection the projection to analyse.
+	 * @return {@code true} when the projection only contains a single column definition otherwise {@code false}.
 	 */
-	private boolean onlyASingleColumnProjection(List<SelectItem<?>> projection) {
+	private static boolean onlyASingleColumnProjection(List<SelectItem<?>> projection) {
 
 		// this is unfortunately the only way to check without any hacky & hard string regex magic
 		return projection.size() == 1 && projection.get(0) instanceof SelectItem<?>
@@ -479,6 +485,22 @@ public class JSqlParserQueryEnhancer implements QueryEnhancer {
 	 */
 	enum ParsedType {
 		DELETE, UPDATE, SELECT, INSERT, MERGE, OTHER;
+	}
+
+	/**
+	 * Deserialize the byte array into an object.
+	 *
+	 * @param bytes a serialized object
+	 * @return the result of deserializing the bytes
+	 */
+	private static Object deserialize(byte[] bytes) {
+		try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
+			return ois.readObject();
+		} catch (IOException ex) {
+			throw new IllegalArgumentException("Failed to deserialize object", ex);
+		} catch (ClassNotFoundException ex) {
+			throw new IllegalStateException("Failed to deserialize object type", ex);
+		}
 	}
 
 }
