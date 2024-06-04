@@ -17,9 +17,13 @@ package org.springframework.data.jpa.repository.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
+import org.springframework.util.CompositeIterator;
 
 /**
  * Abstraction to encapsulate query expressions and render a query.
@@ -36,7 +40,7 @@ import java.util.stream.Stream;
  *
  * @author Mark Paluch
  */
-abstract class QueryRenderer {
+abstract class QueryRenderer implements QueryTokenStream<JpaQueryParsingToken> {
 
 	/**
 	 * Creates a QueryRenderer from a collection of {@link JpaQueryParsingToken}.
@@ -164,6 +168,16 @@ abstract class QueryRenderer {
 
 			return stream;
 		}
+
+		@Override
+		public Iterator<JpaQueryParsingToken> iterator() {
+
+			CompositeIterator<JpaQueryParsingToken> iterator = new CompositeIterator<>();
+			for (QueryRenderer renderer : nested) {
+				iterator.add(renderer.iterator());
+			}
+			return iterator;
+		}
 	}
 
 	/**
@@ -241,12 +255,22 @@ abstract class QueryRenderer {
 
 			return results.toString();
 		}
+
+		@Override
+		public Iterator<JpaQueryParsingToken> iterator() {
+			return tokens.iterator();
+		}
+
+		@Override
+		public List<JpaQueryParsingToken> toList() {
+			return tokens;
+		}
 	}
 
 	/**
 	 * Builder for {@link QueryRenderer}.
 	 */
-	static class QueryRendererBuilder {
+	static class QueryRendererBuilder implements QueryTokenStream<JpaQueryParsingToken> {
 
 		protected QueryRenderer current = QueryRenderer.empty();
 
@@ -446,6 +470,11 @@ abstract class QueryRenderer {
 		public QueryRenderer toInline() {
 			return new InlineRenderer(current);
 		}
+
+		@Override
+		public Iterator<JpaQueryParsingToken> iterator() {
+			return current.iterator();
+		}
 	}
 
 	private static class InlineRenderer extends QueryRenderer {
@@ -464,6 +493,11 @@ abstract class QueryRenderer {
 		@Override
 		public Stream<JpaQueryParsingToken> stream() {
 			return delegate.stream();
+		}
+
+		@Override
+		public Iterator<JpaQueryParsingToken> iterator() {
+			return delegate.iterator();
 		}
 	}
 
@@ -489,6 +523,11 @@ abstract class QueryRenderer {
 		public Stream<JpaQueryParsingToken> stream() {
 			return delegate.stream();
 		}
+
+		@Override
+		public Iterator<JpaQueryParsingToken> iterator() {
+			return delegate.iterator();
+		}
 	}
 
 	private static class EmptyQueryRenderer extends QueryRenderer {
@@ -503,6 +542,11 @@ abstract class QueryRenderer {
 		@Override
 		QueryRenderer append(QueryRenderer renderer) {
 			return renderer;
+		}
+
+		@Override
+		public Iterator<JpaQueryParsingToken> iterator() {
+			return Collections.emptyIterator();
 		}
 	}
 }

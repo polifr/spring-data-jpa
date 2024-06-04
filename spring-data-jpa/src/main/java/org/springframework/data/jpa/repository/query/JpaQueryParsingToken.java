@@ -15,7 +15,6 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.antlr.v4.runtime.Token;
@@ -26,41 +25,42 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  * in the parsing process, so the text itself is wrapped in a {@link Supplier}.
  *
  * @author Greg Turnquist
+ * @author Christoph Strobl
  * @since 3.1
  */
-class JpaQueryParsingToken {
+class JpaQueryParsingToken implements QueryToken {
 
 	/**
 	 * Commonly use tokens.
 	 */
-	public static final JpaQueryParsingToken TOKEN_NONE = JpaQueryParsingToken.token("");
-	public static final JpaQueryParsingToken TOKEN_COMMA = JpaQueryParsingToken.token(", ");
-	public static final JpaQueryParsingToken TOKEN_SPACE = JpaQueryParsingToken.token(" ");
-	public static final JpaQueryParsingToken TOKEN_DOT = JpaQueryParsingToken.token(".");
-	public static final JpaQueryParsingToken TOKEN_EQUALS = JpaQueryParsingToken.token(" = ");
-	public static final JpaQueryParsingToken TOKEN_OPEN_PAREN = JpaQueryParsingToken.token("(");
-	public static final JpaQueryParsingToken TOKEN_CLOSE_PAREN = JpaQueryParsingToken.token(")");
-	public static final JpaQueryParsingToken TOKEN_ORDER_BY = JpaQueryParsingToken.expression("order by");
-	public static final JpaQueryParsingToken TOKEN_LOWER_FUNC = new JpaQueryParsingToken("lower(");
-	public static final JpaQueryParsingToken TOKEN_SELECT_COUNT = JpaQueryParsingToken.token("select count(");
-	public static final JpaQueryParsingToken TOKEN_COUNT_FUNC = JpaQueryParsingToken.token("count(");
-	public static final JpaQueryParsingToken TOKEN_DOUBLE_PIPE = JpaQueryParsingToken.token(" || ");
-	public static final JpaQueryParsingToken TOKEN_OPEN_SQUARE_BRACKET = JpaQueryParsingToken.token("[");
-	public static final JpaQueryParsingToken TOKEN_CLOSE_SQUARE_BRACKET = new JpaQueryParsingToken("]");
-	public static final JpaQueryParsingToken TOKEN_COLON = JpaQueryParsingToken.token(":");
-	public static final JpaQueryParsingToken TOKEN_QUESTION_MARK = JpaQueryParsingToken.token("?");
-	public static final JpaQueryParsingToken TOKEN_OPEN_BRACE = JpaQueryParsingToken.token("{");
-	public static final JpaQueryParsingToken TOKEN_CLOSE_BRACE = new JpaQueryParsingToken("}");
-	public static final JpaQueryParsingToken TOKEN_DOUBLE_UNDERSCORE = JpaQueryParsingToken.token("__");
-	public static final JpaQueryParsingToken TOKEN_AS = JpaQueryParsingToken.expression("AS");
-	public static final JpaQueryParsingToken TOKEN_DESC = JpaQueryParsingToken.expression("desc");
-	public static final JpaQueryParsingToken TOKEN_ASC = JpaQueryParsingToken.expression("asc");
-	public static final JpaQueryParsingToken TOKEN_WITH = JpaQueryParsingToken.expression("WITH");
-	public static final JpaQueryParsingToken TOKEN_NOT = JpaQueryParsingToken.expression("NOT");
-	public static final JpaQueryParsingToken TOKEN_MATERIALIZED = JpaQueryParsingToken.expression("materialized");
-	public static final JpaQueryParsingToken TOKEN_NULLS = JpaQueryParsingToken.expression("NULLS");
-	public static final JpaQueryParsingToken TOKEN_FIRST = JpaQueryParsingToken.expression("FIRST");
-	public static final JpaQueryParsingToken TOKEN_LAST = JpaQueryParsingToken.expression("LAST");
+	static final JpaQueryParsingToken TOKEN_NONE = JpaQueryParsingToken.token("");
+	static final JpaQueryParsingToken TOKEN_COMMA = JpaQueryParsingToken.token(", ");
+	static final JpaQueryParsingToken TOKEN_SPACE = JpaQueryParsingToken.token(" ");
+	static final JpaQueryParsingToken TOKEN_DOT = JpaQueryParsingToken.token(".");
+	static final JpaQueryParsingToken TOKEN_EQUALS = JpaQueryParsingToken.token(" = ");
+	static final JpaQueryParsingToken TOKEN_OPEN_PAREN = JpaQueryParsingToken.token("(");
+	static final JpaQueryParsingToken TOKEN_CLOSE_PAREN = JpaQueryParsingToken.token(")");
+	static final JpaQueryParsingToken TOKEN_ORDER_BY = JpaQueryParsingToken.expression("order by");
+	static final JpaQueryParsingToken TOKEN_LOWER_FUNC = JpaQueryParsingToken.token("lower(");
+	static final JpaQueryParsingToken TOKEN_SELECT_COUNT = JpaQueryParsingToken.token("select count(");
+	static final JpaQueryParsingToken TOKEN_COUNT_FUNC = JpaQueryParsingToken.token("count(");
+	static final JpaQueryParsingToken TOKEN_DOUBLE_PIPE = JpaQueryParsingToken.token(" || ");
+	static final JpaQueryParsingToken TOKEN_OPEN_SQUARE_BRACKET = JpaQueryParsingToken.token("[");
+	static final JpaQueryParsingToken TOKEN_CLOSE_SQUARE_BRACKET = JpaQueryParsingToken.token("]");
+	static final JpaQueryParsingToken TOKEN_COLON = JpaQueryParsingToken.token(":");
+	static final JpaQueryParsingToken TOKEN_QUESTION_MARK = JpaQueryParsingToken.token("?");
+	static final JpaQueryParsingToken TOKEN_OPEN_BRACE = JpaQueryParsingToken.token("{");
+	static final JpaQueryParsingToken TOKEN_CLOSE_BRACE = JpaQueryParsingToken.token("}");
+	static final JpaQueryParsingToken TOKEN_DOUBLE_UNDERSCORE = JpaQueryParsingToken.token("__");
+	static final JpaQueryParsingToken TOKEN_AS = JpaQueryParsingToken.expression("AS");
+	static final JpaQueryParsingToken TOKEN_DESC = JpaQueryParsingToken.expression("desc");
+	static final JpaQueryParsingToken TOKEN_ASC = JpaQueryParsingToken.expression("asc");
+	static final JpaQueryParsingToken TOKEN_WITH = JpaQueryParsingToken.expression("WITH");
+	static final JpaQueryParsingToken TOKEN_NOT = JpaQueryParsingToken.expression("NOT");
+	static final JpaQueryParsingToken TOKEN_MATERIALIZED = JpaQueryParsingToken.expression("materialized");
+	static final JpaQueryParsingToken TOKEN_NULLS = JpaQueryParsingToken.expression("NULLS");
+	static final JpaQueryParsingToken TOKEN_FIRST = JpaQueryParsingToken.expression("FIRST");
+	static final JpaQueryParsingToken TOKEN_LAST = JpaQueryParsingToken.expression("LAST");
 
 	/**
 	 * The text value of the token.
@@ -71,11 +71,11 @@ class JpaQueryParsingToken {
 		this.token = token;
 	}
 
-	public static JpaQueryParsingToken token(TerminalNode node) {
+	static JpaQueryParsingToken token(TerminalNode node) {
 		return token(node.getText());
 	}
 
-	public static JpaQueryParsingToken token(Token token) {
+	static JpaQueryParsingToken token(Token token) {
 		return token(token.getText());
 	}
 
@@ -87,19 +87,23 @@ class JpaQueryParsingToken {
 		return new JpaExpressionToken(expression);
 	}
 
-	public static JpaQueryParsingToken expression(Token token) {
+	static JpaQueryParsingToken expression(Token token) {
 		return expression(token.getText());
 	}
 
-	public static JpaQueryParsingToken expression(TerminalNode node) {
+	static JpaQueryParsingToken expression(TerminalNode node) {
 		return expression(node.getText());
 	}
 
-	public static JpaQueryParsingToken ventilated(Token op) {
+	static JpaQueryParsingToken ventilated(Token op) {
 		return new JpaQueryParsingToken(" " + op.getText() + " ");
 	}
 
 	String getToken() {
+		return value();
+	}
+
+	public String value() {
 		return token;
 	}
 
@@ -113,10 +117,6 @@ class JpaQueryParsingToken {
 		return token.getToken().equalsIgnoreCase(this.getToken());
 	}
 
-	boolean isExpression() {
-		return false;
-	}
-
 	@Override
 	public String toString() {
 		return getToken();
@@ -128,7 +128,7 @@ class JpaQueryParsingToken {
 			super(token);
 		}
 
-		boolean isExpression() {
+		public boolean isExpression() {
 			return true;
 		}
 	}
