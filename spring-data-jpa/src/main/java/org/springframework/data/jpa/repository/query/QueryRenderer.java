@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  * Query rendering consists of multiple building blocks:
  * <ul>
  * <li>{@link JpaQueryParsingToken tokens} and
- * {@link org.springframework.data.jpa.repository.query.JpaQueryParsingToken.JpaQueryExpression expression tokens}</li>
+ * {@link org.springframework.data.jpa.repository.query.JpaQueryParsingToken.JpaExpressionToken expression tokens}</li>
  * <li>{@link QueryRenderer compositions} such as a composition of multiple tokens.</li>
  * <li>{@link QueryRenderer expressions} that are individual parts such as {@code SELECT} or {@code ORDER BY …}</li>
  * <li>{@link QueryRenderer inline expressions} such as composition of tokens and expressions such as function calls
@@ -45,7 +45,7 @@ abstract class QueryRenderer {
 	 * @return
 	 */
 	static QueryRenderer from(Collection<JpaQueryParsingToken> tokens) {
-		List<JpaQueryParsingToken> tokensToUse = new ArrayList<>(32);
+		List<JpaQueryParsingToken> tokensToUse = new ArrayList<>(32); // why do we have this magic 32 everywhere?
 		tokensToUse.addAll(tokens);
 		return new TokenRenderer(tokensToUse);
 	}
@@ -80,10 +80,7 @@ abstract class QueryRenderer {
 	 * @return
 	 */
 	QueryRenderer append(QueryRenderer renderer) {
-		List<QueryRenderer> objects = new ArrayList<>(32);
-		objects.add(this);
-		objects.add(renderer);
-		return new CompositeRenderer(objects);
+		return CompositeRenderer.combine(this, renderer);
 	}
 
 	/**
@@ -112,8 +109,16 @@ abstract class QueryRenderer {
 
 		private final List<QueryRenderer> nested;
 
-		CompositeRenderer(List<QueryRenderer> nested) {
-			this.nested = new ArrayList<>(nested);
+		static CompositeRenderer combine(QueryRenderer root, QueryRenderer nested) {
+
+			List<QueryRenderer> queryRenderers = new ArrayList<>(32);
+			queryRenderers.add(root);
+			queryRenderers.add(nested);
+			return new CompositeRenderer(queryRenderers);
+		}
+
+		private CompositeRenderer(List<QueryRenderer> nested) {
+			this.nested = nested;
 		}
 
 		@Override
@@ -174,7 +179,9 @@ abstract class QueryRenderer {
 
 		@Override
 		String render() {
-			return JpaQueryParsingToken.render(tokens);
+
+			// why do we have a token renderer that asks the token to render itself?
+			return render(tokens);
 		}
 
 		@Override
@@ -190,12 +197,49 @@ abstract class QueryRenderer {
 
 		@Override
 		public boolean isExpression() {
-			return !tokens.isEmpty() && tokens.get(tokens.size() - 1) instanceof JpaQueryParsingToken.JpaQueryExpression;
+			return !tokens.isEmpty() && tokens.get(tokens.size() - 1).isExpression();
 		}
 
 		@Override
 		public Stream<JpaQueryParsingToken> stream() {
 			return tokens.stream();
+		}
+
+		/**
+		 * Render a list of {@link JpaQueryParsingToken}s into a string.
+		 *
+		 * @param tokens
+		 * @return rendered string containing either a query or some subset of that query
+		 */
+		static String render(Object tokens) {
+
+			if (tokens instanceof Collection tpr) {
+				return render(tpr);
+			}
+
+			return ((QueryRenderer.QueryRendererBuilder) tokens).build().render();
+		}
+
+
+		static String render(Collection<JpaQueryParsingToken> tokens) {
+
+			StringBuilder results = new StringBuilder();
+
+			boolean previousExpression = false;
+
+			for (JpaQueryParsingToken jpaQueryParsingToken : tokens) {
+
+				if (previousExpression) {
+					if (!results.isEmpty() && results.charAt(results.length() - 1) != ' ') {
+						results.append(' ');
+					}
+				}
+
+				previousExpression = jpaQueryParsingToken.isExpression();
+				results.append(jpaQueryParsingToken.getToken());
+			}
+
+			return results.toString();
 		}
 	}
 

@@ -84,7 +84,7 @@ class JpaQueryParsingToken {
 	}
 
 	static JpaQueryParsingToken expression(String expression) {
-		return new JpaQueryExpression(expression);
+		return new JpaExpressionToken(expression);
 	}
 
 	public static JpaQueryParsingToken expression(Token token) {
@@ -113,57 +113,23 @@ class JpaQueryParsingToken {
 		return token.getToken().equalsIgnoreCase(this.getToken());
 	}
 
+	boolean isExpression() {
+		return false;
+	}
+
 	@Override
 	public String toString() {
 		return getToken();
 	}
 
-	/**
-	 * Render a list of {@link JpaQueryParsingToken}s into a string.
-	 *
-	 * @param tokens
-	 * @return rendered string containing either a query or some subset of that query
-	 */
-	static String render(Object tokens) {
+	static class JpaExpressionToken extends JpaQueryParsingToken {
 
-		if (tokens instanceof Collection tpr) {
-			return render(tpr);
-		}
-
-		return ((QueryRenderer.QueryRendererBuilder) tokens).build().render();
-	}
-
-	/**
-	 * Render a list of {@link JpaQueryParsingToken}s into a string.
-	 *
-	 * @param tokens
-	 * @return rendered string containing either a query or some subset of that query
-	 */
-	static String render(Collection<JpaQueryParsingToken> tokens) {
-
-		StringBuilder results = new StringBuilder();
-
-		boolean previousExpression = false;
-
-		for (JpaQueryParsingToken jpaQueryParsingToken : tokens) {
-
-			if (previousExpression) {
-				if (!results.isEmpty() && results.charAt(results.length() - 1) != ' ') {
-					results.append(' ');
-				}
-			}
-
-			previousExpression = jpaQueryParsingToken instanceof JpaQueryExpression;
-			results.append(jpaQueryParsingToken.getToken());
-		}
-
-		return results.toString();
-	}
-
-	static class JpaQueryExpression extends JpaQueryParsingToken {
-
-		JpaQueryExpression(String token) {
+		JpaExpressionToken(String token) {
 			super(token);
+		}
+
+		boolean isExpression() {
+			return true;
 		}
 	}
 }

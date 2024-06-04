@@ -52,7 +52,7 @@ class QueryTransformers {
 				continue;
 			}
 
-			if (!token.isA(TOKEN_COMMA) && token instanceof JpaQueryExpression) {
+			if (!token.isA(TOKEN_COMMA) && token.isExpression()) {
 				token = JpaQueryParsingToken.token(token.getToken());
 			}
 

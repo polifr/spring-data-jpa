@@ -65,7 +65,7 @@ class JpaQueryEnhancer implements QueryEnhancer {
 		this.introspector.visit(context);
 
 		List<JpaQueryParsingToken> tokens = introspector.getProjection();
-		this.projection = tokens.isEmpty() ? "" : render(tokens);
+		this.projection = tokens.isEmpty() ? "" : QueryRenderer.TokenRenderer.render(tokens);
 	}
 
 	static <P extends Parser> ParserRuleContext parse(String query, Function<CharStream, Lexer> lexerFactoryFunction,
@@ -194,7 +194,7 @@ class JpaQueryEnhancer implements QueryEnhancer {
 	 */
 	@Override
 	public String applySorting(Sort sort) {
-		return render(sortFunction.apply(sort, detectAlias()).visit(context));
+		return QueryRenderer.TokenRenderer.render(sortFunction.apply(sort, detectAlias()).visit(context));
 	}
 
 	/**
@@ -226,7 +226,7 @@ class JpaQueryEnhancer implements QueryEnhancer {
 	 */
 	@Override
 	public String createCountQueryFor(@Nullable String countProjection) {
-		return render(countQueryFunction.apply(countProjection, detectAlias()).visit(context));
+		return QueryRenderer.TokenRenderer.render(countQueryFunction.apply(countProjection, detectAlias()).visit(context));
 	}
 
 	/**
