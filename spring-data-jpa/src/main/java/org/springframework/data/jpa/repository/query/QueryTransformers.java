@@ -35,12 +35,12 @@ class QueryTransformers {
 	 * @param selection the input selection.
 	 * @return filtered selection to be used with count queries.
 	 */
-	static List<JpaQueryParsingToken> filterCountSelection(List<JpaQueryParsingToken> selection) {
+	static List<QueryToken> filterCountSelection(List<QueryToken> selection) {
 
-		List<JpaQueryParsingToken> target = new ArrayList<>(selection.size());
+		List<QueryToken> target = new ArrayList<>(selection.size());
 		boolean skipNext = false;
 
-		for (JpaQueryParsingToken token : selection) {
+		for (QueryToken token : selection) {
 
 			if (skipNext) {
 				skipNext = false;
@@ -53,7 +53,7 @@ class QueryTransformers {
 			}
 
 			if (!token.isA(TOKEN_COMMA) && token.isExpression()) {
-				token = JpaQueryParsingToken.token(token.getToken());
+				token = JpaQueryParsingToken.token(token.value());
 			}
 
 			target.add(token);

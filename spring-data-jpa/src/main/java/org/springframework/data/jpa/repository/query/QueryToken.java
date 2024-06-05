@@ -25,4 +25,6 @@ public interface QueryToken {
 	default boolean isExpression() {
 		return false;
 	}
+
+	boolean isA(QueryToken queryToken);
 }

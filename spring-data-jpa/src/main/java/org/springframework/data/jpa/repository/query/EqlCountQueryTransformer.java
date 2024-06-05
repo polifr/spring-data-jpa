@@ -87,10 +87,10 @@ class EqlCountQueryTransformer extends EqlQueryRenderer {
 				QueryRendererBuilder selectionListbuilder = QueryRendererBuilder.concat(ctx.select_item(), this::visit,
 						TOKEN_COMMA);
 
-				List<JpaQueryParsingToken> countSelection = QueryTransformers
-						.filterCountSelection(selectionListbuilder.build().stream().toList());
+				List<QueryToken> countSelection = QueryTransformers
+						.filterCountSelection(selectionListbuilder.build().toList());
 
-				if (countSelection.stream().anyMatch(eqlToken -> eqlToken.getToken().contains("new"))) {
+				if (countSelection.stream().anyMatch(eqlToken -> eqlToken.value().contains("new"))) {
 					// constructor
 					nested.append(new JpaQueryParsingToken(primaryFromAlias));
 				} else {

@@ -113,8 +113,8 @@ class JpaQueryParsingToken implements QueryToken {
 	 * @param token must not be {@literal null}.
 	 * @return {@literal true} if both tokens are equals (using case-insensitive comparison).
 	 */
-	boolean isA(JpaQueryParsingToken token) {
-		return token.getToken().equalsIgnoreCase(this.getToken());
+	public boolean isA(QueryToken token) {
+		return token.value().equalsIgnoreCase(this.value());
 	}
 
 	@Override

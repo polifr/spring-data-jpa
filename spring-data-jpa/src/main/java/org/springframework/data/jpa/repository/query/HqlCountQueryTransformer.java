@@ -196,10 +196,10 @@ class HqlCountQueryTransformer extends HqlQueryRenderer {
 
 				if (ctx.DISTINCT() != null) {
 
-					List<JpaQueryParsingToken> countSelection = QueryTransformers
+					List<QueryToken> countSelection = QueryTransformers
 							.filterCountSelection(selectionListbuilder.build().stream().toList());
 
-					if (countSelection.stream().anyMatch(hqlToken -> hqlToken.getToken().contains("new"))) {
+					if (countSelection.stream().anyMatch(hqlToken -> hqlToken.value().contains("new"))) {
 						// constructor
 						nested.append(new JpaQueryParsingToken(primaryFromAlias));
 					} else {
