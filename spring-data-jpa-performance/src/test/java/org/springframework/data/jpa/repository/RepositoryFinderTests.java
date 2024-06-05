@@ -59,7 +59,7 @@ import org.springframework.util.ObjectUtils;
 public class RepositoryFinderTests {
 
 	private static final String PERSON_FIRSTNAME = "first";
-	private static final String COLUMN_PERSON_FIRSTNAME = "first";
+	private static final String COLUMN_PERSON_FIRSTNAME = "firstname";
 
 	@State(Scope.Benchmark)
 	public static class BenchmarkParameters {
