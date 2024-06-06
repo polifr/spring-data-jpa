@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.antlr.v4.runtime.TokenStream;
 import org.springframework.util.CompositeIterator;
 
 /**
@@ -360,6 +361,10 @@ abstract class QueryRenderer implements QueryTokenStream<QueryToken> {
 		 */
 		QueryRendererBuilder append(Collection<? extends QueryToken> tokens) {
 			return append(QueryRenderer.from(tokens));
+		}
+
+		QueryRendererBuilder append(QueryTokenStream<? extends QueryToken> tokens) {
+			return append(QueryRenderer.from(tokens.toList()));
 		}
 
 		/**

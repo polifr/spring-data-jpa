@@ -18,9 +18,8 @@ package org.springframework.data.jpa.repository.query;
 import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken.*;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-
-import org.antlr.v4.runtime.TokenStream;
 
 /**
  * Utility class encapsulating common query transformations.
@@ -30,12 +29,14 @@ import org.antlr.v4.runtime.TokenStream;
  */
 class QueryTransformers {
 
-	static List<QueryToken> filterCountSelection(QueryTokenStream<QueryToken> selection) {
+	static CountSelectionTokenStream filterCountSelection(QueryTokenStream<QueryToken> selection) {
 
 		List<QueryToken> target = new ArrayList<>(selection.estimatedSize());
 		boolean skipNext = false;
+		boolean containsNew = false;
 
 		for (QueryToken token : selection) {
+
 
 			if (skipNext) {
 				skipNext = false;
@@ -51,10 +52,44 @@ class QueryTransformers {
 				token = JpaQueryParsingToken.token(token.value());
 			}
 
+			if(!containsNew && token.value().contains("new")) {
+				containsNew = true;
+			}
+
 			target.add(token);
 		}
 
-		return target;
+		return new CountSelectionTokenStream(target, containsNew);
+	}
+
+	static class CountSelectionTokenStream implements QueryTokenStream<QueryToken> {
+
+		private final List<QueryToken> tokens;
+		private final boolean requiresPrimaryAlias;
+
+		public CountSelectionTokenStream(List<QueryToken> tokens, boolean containsNew) {
+			this.tokens = tokens;
+			this.requiresPrimaryAlias = containsNew;
+		}
+
+		@Override
+		public int estimatedSize() {
+			return tokens.size();
+		}
+
+		@Override
+		public Iterator<QueryToken> iterator() {
+			return tokens.iterator();
+		}
+
+		@Override
+		public List<QueryToken> toList() {
+			return tokens;
+		}
+
+		public boolean requiresPrimaryAlias() {
+			return requiresPrimaryAlias;
+		}
 	}
 
 }
