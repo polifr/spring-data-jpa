@@ -197,7 +197,7 @@ class HqlCountQueryTransformer extends HqlQueryRenderer {
 				if (ctx.DISTINCT() != null) {
 
 					List<QueryToken> countSelection = QueryTransformers
-							.filterCountSelection(selectionListbuilder.build().stream().toList());
+							.filterCountSelection(selectionListbuilder);
 
 					if (countSelection.stream().anyMatch(hqlToken -> hqlToken.value().contains("new"))) {
 						// constructor

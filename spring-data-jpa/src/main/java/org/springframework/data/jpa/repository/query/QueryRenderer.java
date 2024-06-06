@@ -49,7 +49,7 @@ abstract class QueryRenderer implements QueryTokenStream<QueryToken> {
 	 * @return
 	 */
 	static QueryRenderer from(Collection<? extends QueryToken> tokens) {
-		List<QueryToken> tokensToUse = new ArrayList<>(32); // why do we have this magic 32 everywhere?
+		List<QueryToken> tokensToUse = new ArrayList<>(Math.max(tokens.size(), 32));
 		tokensToUse.addAll(tokens);
 		return new TokenRenderer(tokensToUse);
 	}
@@ -105,17 +105,21 @@ abstract class QueryRenderer implements QueryTokenStream<QueryToken> {
 	static class CompositeRenderer extends QueryRenderer {
 
 		private final List<QueryRenderer> nested;
+		private int size;
 
 		static CompositeRenderer combine(QueryRenderer root, QueryRenderer nested) {
 
 			List<QueryRenderer> queryRenderers = new ArrayList<>(32);
 			queryRenderers.add(root);
 			queryRenderers.add(nested);
-			return new CompositeRenderer(queryRenderers);
+
+			return new CompositeRenderer(queryRenderers, root.estimatedSize() + nested.estimatedSize());
 		}
 
-		private CompositeRenderer(List<QueryRenderer> nested) {
+		private CompositeRenderer(List<QueryRenderer> nested, int size) {
+
 			this.nested = nested;
+			this.size = size;
 		}
 
 		@Override
@@ -142,6 +146,7 @@ abstract class QueryRenderer implements QueryTokenStream<QueryToken> {
 		QueryRenderer append(QueryRenderer renderer) {
 
 			nested.add(renderer);
+			this.size += renderer.estimatedSize();
 			return this;
 		}
 
@@ -158,6 +163,11 @@ abstract class QueryRenderer implements QueryTokenStream<QueryToken> {
 				iterator.add(renderer.iterator());
 			}
 			return iterator;
+		}
+
+		@Override
+		public int estimatedSize() {
+			return size;
 		}
 	}
 
@@ -206,6 +216,11 @@ abstract class QueryRenderer implements QueryTokenStream<QueryToken> {
 		@Override
 		public List<QueryToken> toList() {
 			return tokens;
+		}
+
+		@Override
+		public int estimatedSize() {
+			return tokens.size();
 		}
 
 		/**
@@ -470,6 +485,11 @@ abstract class QueryRenderer implements QueryTokenStream<QueryToken> {
 		}
 
 		@Override
+		public int estimatedSize() {
+			return current.estimatedSize();
+		}
+
+		@Override
 		public Iterator<QueryToken> iterator() {
 			return current.iterator();
 		}
@@ -501,6 +521,11 @@ abstract class QueryRenderer implements QueryTokenStream<QueryToken> {
 		@Override
 		public Iterator<QueryToken> iterator() {
 			return delegate.iterator();
+		}
+
+		@Override
+		public int estimatedSize() {
+			return delegate.estimatedSize();
 		}
 	}
 
@@ -536,6 +561,11 @@ abstract class QueryRenderer implements QueryTokenStream<QueryToken> {
 		public Iterator<QueryToken> iterator() {
 			return delegate.iterator();
 		}
+
+		@Override
+		public int estimatedSize() {
+			return delegate.estimatedSize();
+		}
 	}
 
 	private static class EmptyQueryRenderer extends QueryRenderer {
@@ -570,6 +600,11 @@ abstract class QueryRenderer implements QueryTokenStream<QueryToken> {
 		@Override
 		public Iterator<QueryToken> iterator() {
 			return Collections.emptyIterator();
+		}
+
+		@Override
+		public int estimatedSize() {
+			return 0;
 		}
 	}
 }

@@ -33,4 +33,6 @@ public interface QueryTokenStream<T extends QueryToken> extends Streamable<T> {
 	default T lastToken() {
 		return CollectionUtils.lastElement(toList());
 	}
+
+	int estimatedSize();
 }

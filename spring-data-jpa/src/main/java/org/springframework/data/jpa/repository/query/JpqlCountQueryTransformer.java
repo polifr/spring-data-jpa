@@ -88,7 +88,7 @@ class JpqlCountQueryTransformer extends JpqlQueryRenderer {
 						TOKEN_COMMA);
 
 				List<QueryToken> countSelection = QueryTransformers
-						.filterCountSelection(selectionListbuilder.build().stream().toList());
+						.filterCountSelection(selectionListbuilder);
 
 				if (countSelection.stream().anyMatch(jpqlToken -> jpqlToken.value().contains("new"))) {
 					// constructor

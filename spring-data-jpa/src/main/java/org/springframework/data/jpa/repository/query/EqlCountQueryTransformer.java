@@ -88,7 +88,7 @@ class EqlCountQueryTransformer extends EqlQueryRenderer {
 						TOKEN_COMMA);
 
 				List<QueryToken> countSelection = QueryTransformers
-						.filterCountSelection(selectionListbuilder.build().toList());
+						.filterCountSelection(selectionListbuilder);
 
 				if (countSelection.stream().anyMatch(eqlToken -> eqlToken.value().contains("new"))) {
 					// constructor

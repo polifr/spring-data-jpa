@@ -20,6 +20,8 @@ import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken
 import java.util.ArrayList;
 import java.util.List;
 
+import org.antlr.v4.runtime.TokenStream;
+
 /**
  * Utility class encapsulating common query transformations.
  *
@@ -28,16 +30,9 @@ import java.util.List;
  */
 class QueryTransformers {
 
-	/**
-	 * Filter a token list from a {@code SELECT} clause to be used within a count query. That is, filter any {@code AS …}
-	 * aliases.
-	 *
-	 * @param selection the input selection.
-	 * @return filtered selection to be used with count queries.
-	 */
-	static List<QueryToken> filterCountSelection(List<QueryToken> selection) {
+	static List<QueryToken> filterCountSelection(QueryTokenStream<QueryToken> selection) {
 
-		List<QueryToken> target = new ArrayList<>(selection.size());
+		List<QueryToken> target = new ArrayList<>(selection.estimatedSize());
 		boolean skipNext = false;
 
 		for (QueryToken token : selection) {
