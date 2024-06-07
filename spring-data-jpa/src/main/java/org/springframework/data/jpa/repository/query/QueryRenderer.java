@@ -243,6 +243,39 @@ abstract class QueryRenderer implements QueryTokenStream {
 			return builder.toString();
 		}
 
+		/**
+		 * Append a {@link QueryRenderer} to create a composed renderer.
+		 *
+		 * @param tokens
+		 * @return
+		 */
+		QueryRenderer append(QueryTokenStream tokens) {
+
+			if (tokens instanceof QueryRendererBuilder builder) {
+				tokens = builder.current;
+			}
+
+			if (tokens instanceof QueryRenderer qr) {
+
+				if (isEmpty()) {
+					return this;
+				}
+
+				if (qr.isEmpty()) {
+					return qr;
+				}
+
+				if (tokens instanceof CompositeRenderer cr) {
+					this.nested.addAll(cr.nested);
+
+					return this;
+				}
+
+			}
+
+			return super.append(tokens);
+		}
+
 		@Override
 		public QueryToken getLast() {
 

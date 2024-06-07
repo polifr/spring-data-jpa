@@ -1853,7 +1853,7 @@ class JpqlQueryRenderer extends JpqlBaseVisitor<QueryTokenStream> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.CASE()));
-		builder.appendExpression(QueryTokenStream.concatExpressions(ctx.when_clause(), this::visit, TOKEN_NONE));
+		builder.appendExpression(QueryTokenStream.concat(ctx.when_clause(), this::visit, TOKEN_SPACE));
 
 		builder.append(QueryTokens.expression(ctx.ELSE()));
 		builder.appendExpression(visit(ctx.scalar_expression()));
@@ -1882,7 +1882,7 @@ class JpqlQueryRenderer extends JpqlBaseVisitor<QueryTokenStream> {
 
 		builder.append(QueryTokens.expression(ctx.CASE()));
 		builder.appendExpression(visit(ctx.case_operand()));
-		builder.appendExpression(QueryTokenStream.concatExpressions(ctx.simple_when_clause(), this::visit, TOKEN_NONE));
+		builder.appendExpression(QueryTokenStream.concat(ctx.simple_when_clause(), this::visit, TOKEN_SPACE));
 
 		builder.append(QueryTokens.expression(ctx.ELSE()));
 		builder.appendExpression(visit(ctx.scalar_expression()));

@@ -332,7 +332,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryTokenStream> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.appendExpression(visit(ctx.fromRoot()));
-		builder.appendInline(QueryTokenStream.concatExpressions(ctx.joinSpecifier(), this::visit, TOKEN_NONE));
+		builder.appendInline(QueryTokenStream.concat(ctx.joinSpecifier(), this::visit, TOKEN_SPACE));
 
 		return builder;
 	}
@@ -1436,7 +1436,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryTokenStream> {
 
 		builder.append(QueryTokens.expression(ctx.CASE()));
 
-		builder.append(QueryTokenStream.concatExpressions(ctx.caseWhenPredicateClause(), this::visit, TOKEN_NONE));
+		builder.append(QueryTokenStream.concat(ctx.caseWhenPredicateClause(), this::visit, TOKEN_SPACE));
 
 		if (ctx.ELSE() != null) {
 
@@ -1620,7 +1620,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryTokenStream> {
 			trees.add(ctx.frameClause());
 		}
 
-		nested.appendInline(QueryTokenStream.concatExpressions(trees, this::visit, TOKEN_NONE));
+		nested.appendInline(QueryTokenStream.concat(trees, this::visit, TOKEN_SPACE));
 		nested.append(TOKEN_CLOSE_PAREN);
 
 		builder.appendInline(nested);
