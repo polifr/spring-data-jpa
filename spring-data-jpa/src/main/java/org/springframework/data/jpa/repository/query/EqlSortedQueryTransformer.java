@@ -81,7 +81,7 @@ class EqlSortedQueryTransformer extends EqlQueryRenderer {
 	private void doVisitOrderBy(QueryRendererBuilder builder, EqlParser.Select_statementContext ctx) {
 
 		if (ctx.orderby_clause() != null) {
-			QueryRendererBuilder existingOrder = visit(ctx.orderby_clause());
+			QueryTokenStream existingOrder = visit(ctx.orderby_clause());
 			if (sort.isSorted()) {
 				builder.appendInline(existingOrder);
 			} else {
@@ -106,24 +106,27 @@ class EqlSortedQueryTransformer extends EqlQueryRenderer {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelect_item(EqlParser.Select_itemContext ctx) {
+	public QueryTokenStream visitSelect_item(EqlParser.Select_itemContext ctx) {
 
-		QueryRendererBuilder builder = super.visitSelect_item(ctx);
+		QueryTokenStream tokens = super.visitSelect_item(ctx);
 
-		if (ctx.result_variable() != null) {
-			transformerSupport.registerAlias(builder.getLast());
+		if (ctx.result_variable() != null && !tokens.isEmpty()) {
+			transformerSupport.registerAlias(tokens.getLast());
 		}
 
-		return builder;
+		return tokens;
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoin(EqlParser.JoinContext ctx) {
+	public QueryTokenStream visitJoin(EqlParser.JoinContext ctx) {
 
-		QueryRendererBuilder builder = super.visitJoin(ctx);
-		transformerSupport.registerAlias(builder.getLast());
+		QueryTokenStream tokens = super.visitJoin(ctx);
 
-		return builder;
+		if (!tokens.isEmpty()) {
+			transformerSupport.registerAlias(tokens.getLast());
+		}
+
+		return tokens;
 	}
 
 }

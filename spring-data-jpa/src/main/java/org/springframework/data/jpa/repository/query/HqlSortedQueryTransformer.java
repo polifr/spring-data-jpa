@@ -63,7 +63,7 @@ class HqlSortedQueryTransformer extends HqlQueryRenderer {
 		if (!isSubquery(ctx)) {
 
 			if (ctx.queryOrder() != null) {
-				QueryRendererBuilder existingOrder = visit(ctx.queryOrder());
+				QueryTokenStream existingOrder = visit(ctx.queryOrder());
 				if (sort.isSorted()) {
 					builder.appendInline(existingOrder);
 				} else {
@@ -96,39 +96,39 @@ class HqlSortedQueryTransformer extends HqlQueryRenderer {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoinPath(HqlParser.JoinPathContext ctx) {
+	public QueryTokenStream visitJoinPath(HqlParser.JoinPathContext ctx) {
 
-		QueryRendererBuilder builder = super.visitJoinPath(ctx);
+		QueryTokenStream tokens = super.visitJoinPath(ctx);
 
 		if (ctx.variable() != null) {
-			transformerSupport.registerAlias(builder.getLast());
+			transformerSupport.registerAlias(tokens.getLast());
 		}
 
-		return builder;
+		return tokens;
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoinSubquery(HqlParser.JoinSubqueryContext ctx) {
+	public QueryTokenStream visitJoinSubquery(HqlParser.JoinSubqueryContext ctx) {
 
-		QueryRendererBuilder builder = super.visitJoinSubquery(ctx);
+		QueryTokenStream tokens = super.visitJoinSubquery(ctx);
 
-		if (ctx.variable() != null) {
-			transformerSupport.registerAlias(builder.getLast());
+		if (ctx.variable() != null && !tokens.isEmpty()) {
+			transformerSupport.registerAlias(tokens.getLast());
 		}
 
-		return builder;
+		return tokens;
 	}
 
 	@Override
-	public QueryRendererBuilder visitVariable(HqlParser.VariableContext ctx) {
+	public QueryTokenStream visitVariable(HqlParser.VariableContext ctx) {
 
-		QueryRendererBuilder builder = super.visitVariable(ctx);
+		QueryTokenStream tokens = super.visitVariable(ctx);
 
-		if (ctx.identifier() != null) {
-			transformerSupport.registerAlias(builder.getLast());
+		if (ctx.identifier() != null && !tokens.isEmpty()) {
+			transformerSupport.registerAlias(tokens.getLast());
 		}
 
-		return builder;
+		return tokens;
 	}
 
 }

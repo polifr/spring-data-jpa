@@ -48,7 +48,7 @@ class JpqlSortedQueryTransformer extends JpqlQueryRenderer {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelect_statement(JpqlParser.Select_statementContext ctx) {
+	public QueryTokenStream visitSelect_statement(JpqlParser.Select_statementContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 

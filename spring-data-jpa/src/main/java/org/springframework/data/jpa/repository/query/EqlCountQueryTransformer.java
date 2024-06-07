@@ -62,7 +62,7 @@ class EqlCountQueryTransformer extends EqlQueryRenderer {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelect_clause(EqlParser.Select_clauseContext ctx) {
+	public QueryTokenStream visitSelect_clause(EqlParser.Select_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -83,7 +83,7 @@ class EqlCountQueryTransformer extends EqlQueryRenderer {
 
 			if (ctx.DISTINCT() != null) {
 
-				QueryRendererBuilder selectionListbuilder = QueryRendererBuilder.concat(ctx.select_item(), this::visit,
+				QueryTokenStream selectionListbuilder = QueryTokenStream.concat(ctx.select_item(), this::visit,
 						TOKEN_COMMA);
 
 				CountSelectionTokenStream countSelection = QueryTransformers

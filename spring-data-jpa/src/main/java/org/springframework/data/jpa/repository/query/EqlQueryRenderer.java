@@ -32,15 +32,15 @@ import org.springframework.data.jpa.repository.query.QueryRenderer.QueryRenderer
  * @since 3.2
  */
 @SuppressWarnings({ "ConstantConditions", "DuplicatedCode" })
-class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
+class EqlQueryRenderer extends EqlBaseVisitor<QueryTokenStream> {
 
 	@Override
-	public QueryRendererBuilder visitStart(EqlParser.StartContext ctx) {
+	public QueryTokenStream visitStart(EqlParser.StartContext ctx) {
 		return visit(ctx.ql_statement());
 	}
 
 	@Override
-	public QueryRendererBuilder visitQl_statement(EqlParser.Ql_statementContext ctx) {
+	public QueryTokenStream visitQl_statement(EqlParser.Ql_statementContext ctx) {
 
 		if (ctx.select_statement() != null) {
 			return visit(ctx.select_statement());
@@ -54,7 +54,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelect_statement(EqlParser.Select_statementContext ctx) {
+	public QueryTokenStream visitSelect_statement(EqlParser.Select_statementContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -87,7 +87,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSetOperator(EqlParser.SetOperatorContext ctx) {
+	public QueryTokenStream visitSetOperator(EqlParser.SetOperatorContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -107,7 +107,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitUpdate_statement(EqlParser.Update_statementContext ctx) {
+	public QueryTokenStream visitUpdate_statement(EqlParser.Update_statementContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -121,7 +121,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDelete_statement(EqlParser.Delete_statementContext ctx) {
+	public QueryTokenStream visitDelete_statement(EqlParser.Delete_statementContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -135,7 +135,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFrom_clause(EqlParser.From_clauseContext ctx) {
+	public QueryTokenStream visitFrom_clause(EqlParser.From_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -146,14 +146,14 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(TOKEN_COMMA);
 		}
 
-		builder.appendExpression(QueryRendererBuilder
+		builder.appendExpression(QueryTokenStream
 				.concat(ctx.identificationVariableDeclarationOrCollectionMemberDeclaration(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitIdentificationVariableDeclarationOrCollectionMemberDeclaration(
+	public QueryTokenStream visitIdentificationVariableDeclarationOrCollectionMemberDeclaration(
 			EqlParser.IdentificationVariableDeclarationOrCollectionMemberDeclarationContext ctx) {
 
 		if (ctx.identification_variable_declaration() != null) {
@@ -178,7 +178,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitIdentification_variable_declaration(
+	public QueryTokenStream visitIdentification_variable_declaration(
 			EqlParser.Identification_variable_declarationContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
@@ -196,7 +196,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitRange_variable_declaration(EqlParser.Range_variable_declarationContext ctx) {
+	public QueryTokenStream visitRange_variable_declaration(EqlParser.Range_variable_declarationContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -216,7 +216,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoin(EqlParser.JoinContext ctx) {
+	public QueryTokenStream visitJoin(EqlParser.JoinContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -237,7 +237,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFetch_join(EqlParser.Fetch_joinContext ctx) {
+	public QueryTokenStream visitFetch_join(EqlParser.Fetch_joinContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -259,7 +259,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoin_spec(EqlParser.Join_specContext ctx) {
+	public QueryTokenStream visitJoin_spec(EqlParser.Join_specContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -280,7 +280,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoin_condition(EqlParser.Join_conditionContext ctx) {
+	public QueryTokenStream visitJoin_condition(EqlParser.Join_conditionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -291,7 +291,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoin_association_path_expression(
+	public QueryTokenStream visitJoin_association_path_expression(
 			EqlParser.Join_association_path_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
@@ -335,7 +335,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoin_collection_valued_path_expression(
+	public QueryTokenStream visitJoin_collection_valued_path_expression(
 			EqlParser.Join_collection_valued_path_expressionContext ctx) {
 
 		List<ParseTree> items = new ArrayList<>(2 + ctx.single_valued_embeddable_object_field().size());
@@ -346,11 +346,11 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		items.addAll(ctx.single_valued_embeddable_object_field());
 		items.add(ctx.collection_valued_field());
 
-		return QueryRendererBuilder.concat(items, this::visit, TOKEN_DOT);
+		return QueryTokenStream.concat(items, this::visit, TOKEN_DOT);
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoin_single_valued_path_expression(
+	public QueryTokenStream visitJoin_single_valued_path_expression(
 			EqlParser.Join_single_valued_path_expressionContext ctx) {
 
 		List<ParseTree> items = new ArrayList<>(2 + ctx.single_valued_embeddable_object_field().size());
@@ -361,11 +361,11 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		items.addAll(ctx.single_valued_embeddable_object_field());
 		items.add(ctx.single_valued_object_field());
 
-		return QueryRendererBuilder.concat(items, this::visit, TOKEN_DOT);
+		return QueryTokenStream.concat(items, this::visit, TOKEN_DOT);
 	}
 
 	@Override
-	public QueryRendererBuilder visitCollection_member_declaration(EqlParser.Collection_member_declarationContext ctx) {
+	public QueryTokenStream visitCollection_member_declaration(EqlParser.Collection_member_declarationContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -384,7 +384,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitQualified_identification_variable(
+	public QueryTokenStream visitQualified_identification_variable(
 			EqlParser.Qualified_identification_variableContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
@@ -403,7 +403,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitMap_field_identification_variable(
+	public QueryTokenStream visitMap_field_identification_variable(
 			EqlParser.Map_field_identification_variableContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
@@ -426,7 +426,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSingle_valued_path_expression(EqlParser.Single_valued_path_expressionContext ctx) {
+	public QueryTokenStream visitSingle_valued_path_expression(EqlParser.Single_valued_path_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -450,7 +450,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGeneral_identification_variable(
+	public QueryTokenStream visitGeneral_identification_variable(
 			EqlParser.General_identification_variableContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
@@ -465,7 +465,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGeneral_subpath(EqlParser.General_subpathContext ctx) {
+	public QueryTokenStream visitGeneral_subpath(EqlParser.General_subpathContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -474,24 +474,24 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.treated_subpath() != null) {
 
 			builder.appendInline(visit(ctx.treated_subpath()));
-			builder.appendInline(QueryRendererBuilder.concat(ctx.single_valued_object_field(), this::visit, TOKEN_DOT));
+			builder.appendInline(QueryTokenStream.concat(ctx.single_valued_object_field(), this::visit, TOKEN_DOT));
 		}
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimple_subpath(EqlParser.Simple_subpathContext ctx) {
+	public QueryTokenStream visitSimple_subpath(EqlParser.Simple_subpathContext ctx) {
 
 		List<ParseTree> items = new ArrayList<>(1 + ctx.single_valued_object_field().size());
 		items.add(ctx.general_identification_variable());
 		items.addAll(ctx.single_valued_object_field());
 
-		return QueryRendererBuilder.concat(items, this::visit, TOKEN_DOT);
+		return QueryTokenStream.concat(items, this::visit, TOKEN_DOT);
 	}
 
 	@Override
-	public QueryRendererBuilder visitTreated_subpath(EqlParser.Treated_subpathContext ctx) {
+	public QueryTokenStream visitTreated_subpath(EqlParser.Treated_subpathContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -506,7 +506,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitState_field_path_expression(EqlParser.State_field_path_expressionContext ctx) {
+	public QueryTokenStream visitState_field_path_expression(EqlParser.State_field_path_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -518,7 +518,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitState_valued_path_expression(EqlParser.State_valued_path_expressionContext ctx) {
+	public QueryTokenStream visitState_valued_path_expression(EqlParser.State_valued_path_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -532,7 +532,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSingle_valued_object_path_expression(
+	public QueryTokenStream visitSingle_valued_object_path_expression(
 			EqlParser.Single_valued_object_path_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
@@ -545,7 +545,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCollection_valued_path_expression(
+	public QueryTokenStream visitCollection_valued_path_expression(
 			EqlParser.Collection_valued_path_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
@@ -558,7 +558,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitUpdate_clause(EqlParser.Update_clauseContext ctx) {
+	public QueryTokenStream visitUpdate_clause(EqlParser.Update_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -574,13 +574,13 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		}
 
 		builder.append(QueryTokens.expression(ctx.SET()));
-		builder.appendExpression(QueryRendererBuilder.concat(ctx.update_item(), this::visit, TOKEN_COMMA));
+		builder.appendExpression(QueryTokenStream.concat(ctx.update_item(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitUpdate_item(EqlParser.Update_itemContext ctx) {
+	public QueryTokenStream visitUpdate_item(EqlParser.Update_itemContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -597,7 +597,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			items.add(ctx.single_valued_object_field());
 		}
 
-		builder.appendInline(QueryRendererBuilder.concat(items, this::visit, TOKEN_DOT));
+		builder.appendInline(QueryTokenStream.concat(items, this::visit, TOKEN_DOT));
 		builder.append(TOKEN_EQUALS);
 		builder.append(visit(ctx.new_value()));
 
@@ -605,7 +605,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitNew_value(EqlParser.New_valueContext ctx) {
+	public QueryTokenStream visitNew_value(EqlParser.New_valueContext ctx) {
 
 		if (ctx.scalar_expression() != null) {
 			return visit(ctx.scalar_expression());
@@ -619,7 +619,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDelete_clause(EqlParser.Delete_clauseContext ctx) {
+	public QueryTokenStream visitDelete_clause(EqlParser.Delete_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -638,7 +638,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelect_clause(EqlParser.Select_clauseContext ctx) {
+	public QueryTokenStream visitSelect_clause(EqlParser.Select_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -648,13 +648,13 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(QueryTokens.expression(ctx.DISTINCT()));
 		}
 
-		builder.appendExpression(QueryRendererBuilder.concat(ctx.select_item(), this::visit, TOKEN_COMMA));
+		builder.appendExpression(QueryTokenStream.concat(ctx.select_item(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelect_item(EqlParser.Select_itemContext ctx) {
+	public QueryTokenStream visitSelect_item(EqlParser.Select_itemContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -672,7 +672,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelect_expression(EqlParser.Select_expressionContext ctx) {
+	public QueryTokenStream visitSelect_expression(EqlParser.Select_expressionContext ctx) {
 
 		if (ctx.single_valued_path_expression() != null) {
 			return visit(ctx.single_valued_path_expression());
@@ -703,21 +703,21 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitConstructor_expression(EqlParser.Constructor_expressionContext ctx) {
+	public QueryTokenStream visitConstructor_expression(EqlParser.Constructor_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.NEW()));
 		builder.append(visit(ctx.constructor_name()));
 		builder.append(TOKEN_OPEN_PAREN);
-		builder.appendInline(QueryRendererBuilder.concat(ctx.constructor_item(), this::visit, TOKEN_COMMA));
+		builder.appendInline(QueryTokenStream.concat(ctx.constructor_item(), this::visit, TOKEN_COMMA));
 		builder.append(TOKEN_CLOSE_PAREN);
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitConstructor_item(EqlParser.Constructor_itemContext ctx) {
+	public QueryTokenStream visitConstructor_item(EqlParser.Constructor_itemContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -735,7 +735,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitAggregate_expression(EqlParser.Aggregate_expressionContext ctx) {
+	public QueryTokenStream visitAggregate_expression(EqlParser.Aggregate_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -785,7 +785,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitWhere_clause(EqlParser.Where_clauseContext ctx) {
+	public QueryTokenStream visitWhere_clause(EqlParser.Where_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -796,19 +796,19 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGroupby_clause(EqlParser.Groupby_clauseContext ctx) {
+	public QueryTokenStream visitGroupby_clause(EqlParser.Groupby_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.GROUP()));
 		builder.append(QueryTokens.expression(ctx.BY()));
-		builder.appendExpression(QueryRendererBuilder.concat(ctx.groupby_item(), this::visit, TOKEN_COMMA));
+		builder.appendExpression(QueryTokenStream.concat(ctx.groupby_item(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitGroupby_item(EqlParser.Groupby_itemContext ctx) {
+	public QueryTokenStream visitGroupby_item(EqlParser.Groupby_itemContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -824,7 +824,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitHaving_clause(EqlParser.Having_clauseContext ctx) {
+	public QueryTokenStream visitHaving_clause(EqlParser.Having_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -835,19 +835,19 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitOrderby_clause(EqlParser.Orderby_clauseContext ctx) {
+	public QueryTokenStream visitOrderby_clause(EqlParser.Orderby_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.ORDER()));
 		builder.append(QueryTokens.expression(ctx.BY()));
-		builder.append(QueryRendererBuilder.concat(ctx.orderby_item(), this::visit, TOKEN_COMMA));
+		builder.append(QueryTokenStream.concat(ctx.orderby_item(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitOrderby_item(EqlParser.Orderby_itemContext ctx) {
+	public QueryTokenStream visitOrderby_item(EqlParser.Orderby_itemContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -878,7 +878,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitNullsPrecedence(EqlParser.NullsPrecedenceContext ctx) {
+	public QueryTokenStream visitNullsPrecedence(EqlParser.NullsPrecedenceContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -894,7 +894,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSubquery(EqlParser.SubqueryContext ctx) {
+	public QueryTokenStream visitSubquery(EqlParser.SubqueryContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -914,51 +914,51 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSubquery_from_clause(EqlParser.Subquery_from_clauseContext ctx) {
+	public QueryTokenStream visitSubquery_from_clause(EqlParser.Subquery_from_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.FROM()));
 		builder.appendExpression(
-				QueryRendererBuilder.concat(ctx.subselect_identification_variable_declaration(), this::visit, TOKEN_COMMA));
+				QueryTokenStream.concat(ctx.subselect_identification_variable_declaration(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitSubselect_identification_variable_declaration(
+	public QueryTokenStream visitSubselect_identification_variable_declaration(
 			EqlParser.Subselect_identification_variable_declarationContext ctx) {
 		return super.visitSubselect_identification_variable_declaration(ctx);
 	}
 
 	@Override
-	public QueryRendererBuilder visitDerived_path_expression(EqlParser.Derived_path_expressionContext ctx) {
+	public QueryTokenStream visitDerived_path_expression(EqlParser.Derived_path_expressionContext ctx) {
 		return super.visitDerived_path_expression(ctx);
 	}
 
 	@Override
-	public QueryRendererBuilder visitGeneral_derived_path(EqlParser.General_derived_pathContext ctx) {
+	public QueryTokenStream visitGeneral_derived_path(EqlParser.General_derived_pathContext ctx) {
 		return super.visitGeneral_derived_path(ctx);
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimple_derived_path(EqlParser.Simple_derived_pathContext ctx) {
+	public QueryTokenStream visitSimple_derived_path(EqlParser.Simple_derived_pathContext ctx) {
 		return super.visitSimple_derived_path(ctx);
 	}
 
 	@Override
-	public QueryRendererBuilder visitTreated_derived_path(EqlParser.Treated_derived_pathContext ctx) {
+	public QueryTokenStream visitTreated_derived_path(EqlParser.Treated_derived_pathContext ctx) {
 		return super.visitTreated_derived_path(ctx);
 	}
 
 	@Override
-	public QueryRendererBuilder visitDerived_collection_member_declaration(
+	public QueryTokenStream visitDerived_collection_member_declaration(
 			EqlParser.Derived_collection_member_declarationContext ctx) {
 		return super.visitDerived_collection_member_declaration(ctx);
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimple_select_clause(EqlParser.Simple_select_clauseContext ctx) {
+	public QueryTokenStream visitSimple_select_clause(EqlParser.Simple_select_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -972,7 +972,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimple_select_expression(EqlParser.Simple_select_expressionContext ctx) {
+	public QueryTokenStream visitSimple_select_expression(EqlParser.Simple_select_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -990,7 +990,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitScalar_expression(EqlParser.Scalar_expressionContext ctx) {
+	public QueryTokenStream visitScalar_expression(EqlParser.Scalar_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1014,7 +1014,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitConditional_expression(EqlParser.Conditional_expressionContext ctx) {
+	public QueryTokenStream visitConditional_expression(EqlParser.Conditional_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1030,7 +1030,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitConditional_term(EqlParser.Conditional_termContext ctx) {
+	public QueryTokenStream visitConditional_term(EqlParser.Conditional_termContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1046,7 +1046,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitConditional_factor(EqlParser.Conditional_factorContext ctx) {
+	public QueryTokenStream visitConditional_factor(EqlParser.Conditional_factorContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1060,7 +1060,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitConditional_primary(EqlParser.Conditional_primaryContext ctx) {
+	public QueryTokenStream visitConditional_primary(EqlParser.Conditional_primaryContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1077,7 +1077,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimple_cond_expression(EqlParser.Simple_cond_expressionContext ctx) {
+	public QueryTokenStream visitSimple_cond_expression(EqlParser.Simple_cond_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1103,7 +1103,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitBetween_expression(EqlParser.Between_expressionContext ctx) {
+	public QueryTokenStream visitBetween_expression(EqlParser.Between_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1151,7 +1151,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitIn_expression(EqlParser.In_expressionContext ctx) {
+	public QueryTokenStream visitIn_expression(EqlParser.In_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1171,7 +1171,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		if (ctx.in_item() != null && !ctx.in_item().isEmpty()) {
 
 			builder.append(TOKEN_OPEN_PAREN);
-			builder.appendInline(QueryRendererBuilder.concat(ctx.in_item(), this::visit, TOKEN_COMMA));
+			builder.appendInline(QueryTokenStream.concat(ctx.in_item(), this::visit, TOKEN_COMMA));
 
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.subquery() != null) {
@@ -1187,7 +1187,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitIn_item(EqlParser.In_itemContext ctx) {
+	public QueryTokenStream visitIn_item(EqlParser.In_itemContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1201,7 +1201,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitLike_expression(EqlParser.Like_expressionContext ctx) {
+	public QueryTokenStream visitLike_expression(EqlParser.Like_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1222,7 +1222,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitNull_comparison_expression(EqlParser.Null_comparison_expressionContext ctx) {
+	public QueryTokenStream visitNull_comparison_expression(EqlParser.Null_comparison_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1248,7 +1248,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitEmpty_collection_comparison_expression(
+	public QueryTokenStream visitEmpty_collection_comparison_expression(
 			EqlParser.Empty_collection_comparison_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
@@ -1264,7 +1264,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCollection_member_expression(EqlParser.Collection_member_expressionContext ctx) {
+	public QueryTokenStream visitCollection_member_expression(EqlParser.Collection_member_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1282,7 +1282,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitEntity_or_value_expression(EqlParser.Entity_or_value_expressionContext ctx) {
+	public QueryTokenStream visitEntity_or_value_expression(EqlParser.Entity_or_value_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1298,7 +1298,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimple_entity_or_value_expression(
+	public QueryTokenStream visitSimple_entity_or_value_expression(
 			EqlParser.Simple_entity_or_value_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
@@ -1315,7 +1315,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitExists_expression(EqlParser.Exists_expressionContext ctx) {
+	public QueryTokenStream visitExists_expression(EqlParser.Exists_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1332,7 +1332,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitAll_or_any_expression(EqlParser.All_or_any_expressionContext ctx) {
+	public QueryTokenStream visitAll_or_any_expression(EqlParser.All_or_any_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1352,7 +1352,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitStringComparison(EqlParser.StringComparisonContext ctx) {
+	public QueryTokenStream visitStringComparison(EqlParser.StringComparisonContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1369,7 +1369,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitBooleanComparison(EqlParser.BooleanComparisonContext ctx) {
+	public QueryTokenStream visitBooleanComparison(EqlParser.BooleanComparisonContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1386,12 +1386,12 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDirectBooleanCheck(EqlParser.DirectBooleanCheckContext ctx) {
+	public QueryTokenStream visitDirectBooleanCheck(EqlParser.DirectBooleanCheckContext ctx) {
 		return visit(ctx.boolean_expression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitEnumComparison(EqlParser.EnumComparisonContext ctx) {
+	public QueryTokenStream visitEnumComparison(EqlParser.EnumComparisonContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1408,7 +1408,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDatetimeComparison(EqlParser.DatetimeComparisonContext ctx) {
+	public QueryTokenStream visitDatetimeComparison(EqlParser.DatetimeComparisonContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1425,7 +1425,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitEntityComparison(EqlParser.EntityComparisonContext ctx) {
+	public QueryTokenStream visitEntityComparison(EqlParser.EntityComparisonContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1442,7 +1442,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitArithmeticComparison(EqlParser.ArithmeticComparisonContext ctx) {
+	public QueryTokenStream visitArithmeticComparison(EqlParser.ArithmeticComparisonContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1459,7 +1459,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitEntityTypeComparison(EqlParser.EntityTypeComparisonContext ctx) {
+	public QueryTokenStream visitEntityTypeComparison(EqlParser.EntityTypeComparisonContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1471,7 +1471,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitRegexpComparison(EqlParser.RegexpComparisonContext ctx) {
+	public QueryTokenStream visitRegexpComparison(EqlParser.RegexpComparisonContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1483,12 +1483,12 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitComparison_operator(EqlParser.Comparison_operatorContext ctx) {
+	public QueryTokenStream visitComparison_operator(EqlParser.Comparison_operatorContext ctx) {
 		return QueryRendererBuilder.from(QueryTokens.ventilated(ctx.op));
 	}
 
 	@Override
-	public QueryRendererBuilder visitArithmetic_expression(EqlParser.Arithmetic_expressionContext ctx) {
+	public QueryTokenStream visitArithmetic_expression(EqlParser.Arithmetic_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1506,7 +1506,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitArithmetic_term(EqlParser.Arithmetic_termContext ctx) {
+	public QueryTokenStream visitArithmetic_term(EqlParser.Arithmetic_termContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1523,7 +1523,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitArithmetic_factor(EqlParser.Arithmetic_factorContext ctx) {
+	public QueryTokenStream visitArithmetic_factor(EqlParser.Arithmetic_factorContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1536,7 +1536,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitArithmetic_primary(EqlParser.Arithmetic_primaryContext ctx) {
+	public QueryTokenStream visitArithmetic_primary(EqlParser.Arithmetic_primaryContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1572,7 +1572,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitString_expression(EqlParser.String_expressionContext ctx) {
+	public QueryTokenStream visitString_expression(EqlParser.String_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1601,7 +1601,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDatetime_expression(EqlParser.Datetime_expressionContext ctx) {
+	public QueryTokenStream visitDatetime_expression(EqlParser.Datetime_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1632,7 +1632,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitBoolean_expression(EqlParser.Boolean_expressionContext ctx) {
+	public QueryTokenStream visitBoolean_expression(EqlParser.Boolean_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1657,7 +1657,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitEnum_expression(EqlParser.Enum_expressionContext ctx) {
+	public QueryTokenStream visitEnum_expression(EqlParser.Enum_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1680,7 +1680,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitEntity_expression(EqlParser.Entity_expressionContext ctx) {
+	public QueryTokenStream visitEntity_expression(EqlParser.Entity_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1694,7 +1694,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimple_entity_expression(EqlParser.Simple_entity_expressionContext ctx) {
+	public QueryTokenStream visitSimple_entity_expression(EqlParser.Simple_entity_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1708,7 +1708,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitEntity_type_expression(EqlParser.Entity_type_expressionContext ctx) {
+	public QueryTokenStream visitEntity_type_expression(EqlParser.Entity_type_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1724,7 +1724,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitType_discriminator(EqlParser.Type_discriminatorContext ctx) {
+	public QueryTokenStream visitType_discriminator(EqlParser.Type_discriminatorContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1744,7 +1744,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFunctions_returning_numerics(EqlParser.Functions_returning_numericsContext ctx) {
+	public QueryTokenStream visitFunctions_returning_numerics(EqlParser.Functions_returning_numericsContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1852,7 +1852,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFunctions_returning_datetime(EqlParser.Functions_returning_datetimeContext ctx) {
+	public QueryTokenStream visitFunctions_returning_datetime(EqlParser.Functions_returning_datetimeContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1881,7 +1881,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFunctions_returning_strings(EqlParser.Functions_returning_stringsContext ctx) {
+	public QueryTokenStream visitFunctions_returning_strings(EqlParser.Functions_returning_stringsContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1889,7 +1889,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 			builder.append(QueryTokens.token(ctx.CONCAT()));
 			builder.append(TOKEN_OPEN_PAREN);
-			builder.appendInline(QueryRendererBuilder.concat(ctx.string_expression(), this::visit, TOKEN_COMMA));
+			builder.appendInline(QueryTokenStream.concat(ctx.string_expression(), this::visit, TOKEN_COMMA));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.SUBSTRING() != null) {
 
@@ -1897,7 +1897,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.string_expression(0)));
 			builder.append(TOKEN_COMMA);
-			builder.appendInline(QueryRendererBuilder.concat(ctx.arithmetic_expression(), this::visit, TOKEN_COMMA));
+			builder.appendInline(QueryTokenStream.concat(ctx.arithmetic_expression(), this::visit, TOKEN_COMMA));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.TRIM() != null) {
 
@@ -1932,7 +1932,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitTrim_specification(EqlParser.Trim_specificationContext ctx) {
+	public QueryTokenStream visitTrim_specification(EqlParser.Trim_specificationContext ctx) {
 
 		if (ctx.LEADING() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.LEADING()));
@@ -1944,7 +1944,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCast_function(EqlParser.Cast_functionContext ctx) {
+	public QueryTokenStream visitCast_function(EqlParser.Cast_functionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1957,7 +1957,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		if (ctx.numeric_literal() != null) {
 
 			builder.append(TOKEN_OPEN_PAREN);
-			builder.appendInline(QueryRendererBuilder.concat(ctx.numeric_literal(), this::visit, TOKEN_COMMA));
+			builder.appendInline(QueryTokenStream.concat(ctx.numeric_literal(), this::visit, TOKEN_COMMA));
 			builder.append(TOKEN_CLOSE_PAREN);
 		}
 		builder.append(TOKEN_CLOSE_PAREN);
@@ -1966,7 +1966,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFunction_invocation(EqlParser.Function_invocationContext ctx) {
+	public QueryTokenStream visitFunction_invocation(EqlParser.Function_invocationContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1981,14 +1981,14 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(TOKEN_COMMA);
 		}
 
-		builder.appendInline(QueryRendererBuilder.concat(ctx.function_arg(), this::visit, TOKEN_COMMA));
+		builder.appendInline(QueryTokenStream.concat(ctx.function_arg(), this::visit, TOKEN_COMMA));
 		builder.append(TOKEN_CLOSE_PAREN);
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitExtract_datetime_field(EqlParser.Extract_datetime_fieldContext ctx) {
+	public QueryTokenStream visitExtract_datetime_field(EqlParser.Extract_datetime_fieldContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2003,12 +2003,12 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDatetime_field(EqlParser.Datetime_fieldContext ctx) {
+	public QueryTokenStream visitDatetime_field(EqlParser.Datetime_fieldContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitExtract_datetime_part(EqlParser.Extract_datetime_partContext ctx) {
+	public QueryTokenStream visitExtract_datetime_part(EqlParser.Extract_datetime_partContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2023,12 +2023,12 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDatetime_part(EqlParser.Datetime_partContext ctx) {
+	public QueryTokenStream visitDatetime_part(EqlParser.Datetime_partContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitFunction_arg(EqlParser.Function_argContext ctx) {
+	public QueryTokenStream visitFunction_arg(EqlParser.Function_argContext ctx) {
 
 		if (ctx.literal() != null) {
 			return visit(ctx.literal());
@@ -2042,7 +2042,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCase_expression(EqlParser.Case_expressionContext ctx) {
+	public QueryTokenStream visitCase_expression(EqlParser.Case_expressionContext ctx) {
 
 		if (ctx.general_case_expression() != null) {
 			return visit(ctx.general_case_expression());
@@ -2056,7 +2056,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGeneral_case_expression(EqlParser.General_case_expressionContext ctx) {
+	public QueryTokenStream visitGeneral_case_expression(EqlParser.General_case_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2074,7 +2074,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitWhen_clause(EqlParser.When_clauseContext ctx) {
+	public QueryTokenStream visitWhen_clause(EqlParser.When_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2087,7 +2087,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimple_case_expression(EqlParser.Simple_case_expressionContext ctx) {
+	public QueryTokenStream visitSimple_case_expression(EqlParser.Simple_case_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2106,7 +2106,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCase_operand(EqlParser.Case_operandContext ctx) {
+	public QueryTokenStream visitCase_operand(EqlParser.Case_operandContext ctx) {
 
 		if (ctx.state_valued_path_expression() != null) {
 			return visit(ctx.state_valued_path_expression());
@@ -2116,7 +2116,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimple_when_clause(EqlParser.Simple_when_clauseContext ctx) {
+	public QueryTokenStream visitSimple_when_clause(EqlParser.Simple_when_clauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2129,20 +2129,20 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCoalesce_expression(EqlParser.Coalesce_expressionContext ctx) {
+	public QueryTokenStream visitCoalesce_expression(EqlParser.Coalesce_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.token(ctx.COALESCE()));
 		builder.append(TOKEN_OPEN_PAREN);
-		builder.appendInline(QueryRendererBuilder.concat(ctx.scalar_expression(), this::visit, TOKEN_COMMA));
+		builder.appendInline(QueryTokenStream.concat(ctx.scalar_expression(), this::visit, TOKEN_COMMA));
 		builder.append(TOKEN_CLOSE_PAREN);
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitNullif_expression(EqlParser.Nullif_expressionContext ctx) {
+	public QueryTokenStream visitNullif_expression(EqlParser.Nullif_expressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2157,7 +2157,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitTrim_character(EqlParser.Trim_characterContext ctx) {
+	public QueryTokenStream visitTrim_character(EqlParser.Trim_characterContext ctx) {
 
 		if (ctx.CHARACTER() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.CHARACTER()));
@@ -2169,7 +2169,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitIdentification_variable(EqlParser.Identification_variableContext ctx) {
+	public QueryTokenStream visitIdentification_variable(EqlParser.Identification_variableContext ctx) {
 
 		if (ctx.IDENTIFICATION_VARIABLE() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.IDENTIFICATION_VARIABLE()));
@@ -2181,12 +2181,12 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitConstructor_name(EqlParser.Constructor_nameContext ctx) {
+	public QueryTokenStream visitConstructor_name(EqlParser.Constructor_nameContext ctx) {
 		return visit(ctx.entity_name());
 	}
 
 	@Override
-	public QueryRendererBuilder visitLiteral(EqlParser.LiteralContext ctx) {
+	public QueryTokenStream visitLiteral(EqlParser.LiteralContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2208,7 +2208,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitInput_parameter(EqlParser.Input_parameterContext ctx) {
+	public QueryTokenStream visitInput_parameter(EqlParser.Input_parameterContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2226,7 +2226,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitPattern_value(EqlParser.Pattern_valueContext ctx) {
+	public QueryTokenStream visitPattern_value(EqlParser.Pattern_valueContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2236,7 +2236,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDate_time_timestamp_literal(EqlParser.Date_time_timestamp_literalContext ctx) {
+	public QueryTokenStream visitDate_time_timestamp_literal(EqlParser.Date_time_timestamp_literalContext ctx) {
 
 		if (ctx.STRINGLITERAL() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.STRINGLITERAL()));
@@ -2252,17 +2252,17 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitEntity_type_literal(EqlParser.Entity_type_literalContext ctx) {
+	public QueryTokenStream visitEntity_type_literal(EqlParser.Entity_type_literalContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitEscape_character(EqlParser.Escape_characterContext ctx) {
+	public QueryTokenStream visitEscape_character(EqlParser.Escape_characterContext ctx) {
 		return QueryRendererBuilder.from(QueryTokens.token(ctx.CHARACTER()));
 	}
 
 	@Override
-	public QueryRendererBuilder visitNumeric_literal(EqlParser.Numeric_literalContext ctx) {
+	public QueryTokenStream visitNumeric_literal(EqlParser.Numeric_literalContext ctx) {
 
 		if (ctx.INTLITERAL() != null) {
 			return QueryRendererBuilder.from(QueryTokens.token(ctx.INTLITERAL()));
@@ -2276,7 +2276,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitBoolean_literal(EqlParser.Boolean_literalContext ctx) {
+	public QueryTokenStream visitBoolean_literal(EqlParser.Boolean_literalContext ctx) {
 
 		if (ctx.TRUE() != null) {
 			return QueryRendererBuilder.from(QueryTokens.token(ctx.TRUE()));
@@ -2288,12 +2288,12 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitEnum_literal(EqlParser.Enum_literalContext ctx) {
+	public QueryTokenStream visitEnum_literal(EqlParser.Enum_literalContext ctx) {
 		return visit(ctx.state_field_path_expression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitString_literal(EqlParser.String_literalContext ctx) {
+	public QueryTokenStream visitString_literal(EqlParser.String_literalContext ctx) {
 
 		if (ctx.CHARACTER() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.CHARACTER()));
@@ -2305,70 +2305,70 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSingle_valued_embeddable_object_field(
+	public QueryTokenStream visitSingle_valued_embeddable_object_field(
 			EqlParser.Single_valued_embeddable_object_fieldContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitSubtype(EqlParser.SubtypeContext ctx) {
+	public QueryTokenStream visitSubtype(EqlParser.SubtypeContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitCollection_valued_field(EqlParser.Collection_valued_fieldContext ctx) {
+	public QueryTokenStream visitCollection_valued_field(EqlParser.Collection_valued_fieldContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitSingle_valued_object_field(EqlParser.Single_valued_object_fieldContext ctx) {
+	public QueryTokenStream visitSingle_valued_object_field(EqlParser.Single_valued_object_fieldContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitState_field(EqlParser.State_fieldContext ctx) {
+	public QueryTokenStream visitState_field(EqlParser.State_fieldContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitCollection_value_field(EqlParser.Collection_value_fieldContext ctx) {
+	public QueryTokenStream visitCollection_value_field(EqlParser.Collection_value_fieldContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitEntity_name(EqlParser.Entity_nameContext ctx) {
-		return QueryRendererBuilder.concat(ctx.reserved_word(), this::visit, QueryRendererBuilder::toInline, TOKEN_DOT);
+	public QueryTokenStream visitEntity_name(EqlParser.Entity_nameContext ctx) {
+		return QueryTokenStream.concat(ctx.reserved_word(), this::visit, QueryRenderer::inline, TOKEN_DOT);
 	}
 
 	@Override
-	public QueryRendererBuilder visitResult_variable(EqlParser.Result_variableContext ctx) {
+	public QueryTokenStream visitResult_variable(EqlParser.Result_variableContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitSuperquery_identification_variable(
+	public QueryTokenStream visitSuperquery_identification_variable(
 			EqlParser.Superquery_identification_variableContext ctx) {
 		return visit(ctx.identification_variable());
 	}
 
 	@Override
-	public QueryRendererBuilder visitCollection_valued_input_parameter(
+	public QueryTokenStream visitCollection_valued_input_parameter(
 			EqlParser.Collection_valued_input_parameterContext ctx) {
 		return visit(ctx.input_parameter());
 	}
 
 	@Override
-	public QueryRendererBuilder visitSingle_valued_input_parameter(EqlParser.Single_valued_input_parameterContext ctx) {
+	public QueryTokenStream visitSingle_valued_input_parameter(EqlParser.Single_valued_input_parameterContext ctx) {
 		return visit(ctx.input_parameter());
 	}
 
 	@Override
-	public QueryRendererBuilder visitFunction_name(EqlParser.Function_nameContext ctx) {
+	public QueryTokenStream visitFunction_name(EqlParser.Function_nameContext ctx) {
 		return visit(ctx.string_literal());
 	}
 
 	@Override
-	public QueryRendererBuilder visitCharacter_valued_input_parameter(
+	public QueryTokenStream visitCharacter_valued_input_parameter(
 			EqlParser.Character_valued_input_parameterContext ctx) {
 
 		if (ctx.CHARACTER() != null) {
@@ -2381,7 +2381,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitReserved_word(EqlParser.Reserved_wordContext ctx) {
+	public QueryTokenStream visitReserved_word(EqlParser.Reserved_wordContext ctx) {
 		if (ctx.IDENTIFICATION_VARIABLE() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.IDENTIFICATION_VARIABLE()));
 		} else if (ctx.f != null) {

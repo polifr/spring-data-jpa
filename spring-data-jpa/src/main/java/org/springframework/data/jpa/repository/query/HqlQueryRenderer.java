@@ -33,7 +33,7 @@ import org.springframework.data.jpa.repository.query.QueryRenderer.QueryRenderer
  * @since 3.1
  */
 @SuppressWarnings({ "ConstantConditions", "DuplicatedCode", "UnreachableCode" })
-class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
+class HqlQueryRenderer extends HqlBaseVisitor<QueryTokenStream> {
 
 	/**
 	 * Is this select clause a {@literal subquery}?
@@ -54,12 +54,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitStart(HqlParser.StartContext ctx) {
+	public QueryTokenStream visitStart(HqlParser.StartContext ctx) {
 		return visit(ctx.ql_statement());
 	}
 
 	@Override
-	public QueryRendererBuilder visitQl_statement(HqlParser.Ql_statementContext ctx) {
+	public QueryTokenStream visitQl_statement(HqlParser.Ql_statementContext ctx) {
 
 		if (ctx.selectStatement() != null) {
 			return visit(ctx.selectStatement());
@@ -70,17 +70,17 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.insertStatement() != null) {
 			return visit(ctx.insertStatement());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelectStatement(HqlParser.SelectStatementContext ctx) {
+	public QueryTokenStream visitSelectStatement(HqlParser.SelectStatementContext ctx) {
 		return visit(ctx.queryExpression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitQueryExpression(HqlParser.QueryExpressionContext ctx) {
+	public QueryTokenStream visitQueryExpression(HqlParser.QueryExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -100,16 +100,16 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitWithClause(HqlParser.WithClauseContext ctx) {
+	public QueryTokenStream visitWithClause(HqlParser.WithClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRendererBuilder.from(TOKEN_WITH);
-		builder.append(QueryRendererBuilder.concatExpressions(ctx.cte(), this::visit, TOKEN_COMMA));
+		builder.append(QueryTokenStream.concatExpressions(ctx.cte(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitCte(HqlParser.CteContext ctx) {
+	public QueryTokenStream visitCte(HqlParser.CteContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -140,7 +140,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSearchClause(HqlParser.SearchClauseContext ctx) {
+	public QueryTokenStream visitSearchClause(HqlParser.SearchClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -162,12 +162,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSearchSpecifications(HqlParser.SearchSpecificationsContext ctx) {
-		return QueryRendererBuilder.concat(ctx.searchSpecification(), this::visit, TOKEN_COMMA);
+	public QueryTokenStream visitSearchSpecifications(HqlParser.SearchSpecificationsContext ctx) {
+		return QueryTokenStream.concat(ctx.searchSpecification(), this::visit, TOKEN_COMMA);
 	}
 
 	@Override
-	public QueryRendererBuilder visitSearchSpecification(HqlParser.SearchSpecificationContext ctx) {
+	public QueryTokenStream visitSearchSpecification(HqlParser.SearchSpecificationContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -185,7 +185,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCycleClause(HqlParser.CycleClauseContext ctx) {
+	public QueryTokenStream visitCycleClause(HqlParser.CycleClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -212,12 +212,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCteAttributes(HqlParser.CteAttributesContext ctx) {
-		return QueryRendererBuilder.concat(ctx.identifier(), this::visit, TOKEN_COMMA);
+	public QueryTokenStream visitCteAttributes(HqlParser.CteAttributesContext ctx) {
+		return QueryTokenStream.concat(ctx.identifier(), this::visit, TOKEN_COMMA);
 	}
 
 	@Override
-	public QueryRendererBuilder visitOrderedQuery(HqlParser.OrderedQueryContext ctx) {
+	public QueryTokenStream visitOrderedQuery(HqlParser.OrderedQueryContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -238,7 +238,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelectQuery(HqlParser.SelectQueryContext ctx) {
+	public QueryTokenStream visitSelectQuery(HqlParser.SelectQueryContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -266,7 +266,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFromQuery(HqlParser.FromQueryContext ctx) {
+	public QueryTokenStream visitFromQuery(HqlParser.FromQueryContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -292,7 +292,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitQueryOrder(HqlParser.QueryOrderContext ctx) {
+	public QueryTokenStream visitQueryOrder(HqlParser.QueryOrderContext ctx) {
 
 		if (ctx.limitClause() == null && ctx.offsetClause() == null && ctx.fetchClause() == null) {
 			return visit(ctx.orderByClause());
@@ -316,29 +316,29 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFromClause(HqlParser.FromClauseContext ctx) {
+	public QueryTokenStream visitFromClause(HqlParser.FromClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.FROM()));
-		builder.appendExpression(QueryRendererBuilder.concat(ctx.entityWithJoins(), this::visit, TOKEN_COMMA));
+		builder.appendExpression(QueryTokenStream.concat(ctx.entityWithJoins(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitEntityWithJoins(HqlParser.EntityWithJoinsContext ctx) {
+	public QueryTokenStream visitEntityWithJoins(HqlParser.EntityWithJoinsContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.appendExpression(visit(ctx.fromRoot()));
-		builder.appendInline(QueryRendererBuilder.concatExpressions(ctx.joinSpecifier(), this::visit, TOKEN_NONE));
+		builder.appendInline(QueryTokenStream.concatExpressions(ctx.joinSpecifier(), this::visit, TOKEN_NONE));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoinSpecifier(HqlParser.JoinSpecifierContext ctx) {
+	public QueryTokenStream visitJoinSpecifier(HqlParser.JoinSpecifierContext ctx) {
 
 		if (ctx.join() != null) {
 			return visit(ctx.join());
@@ -347,12 +347,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.jpaCollectionJoin() != null) {
 			return visit(ctx.jpaCollectionJoin());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitFromRoot(HqlParser.FromRootContext ctx) {
+	public QueryTokenStream visitFromRoot(HqlParser.FromRootContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -387,7 +387,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoin(HqlParser.JoinContext ctx) {
+	public QueryTokenStream visitJoin(HqlParser.JoinContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -408,7 +408,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoinPath(HqlParser.JoinPathContext ctx) {
+	public QueryTokenStream visitJoinPath(HqlParser.JoinPathContext ctx) {
 
 		HqlParser.VariableContext variable = ctx.variable();
 
@@ -424,7 +424,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoinSubquery(HqlParser.JoinSubqueryContext ctx) {
+	public QueryTokenStream visitJoinSubquery(HqlParser.JoinSubqueryContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -444,7 +444,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitUpdateStatement(HqlParser.UpdateStatementContext ctx) {
+	public QueryTokenStream visitUpdateStatement(HqlParser.UpdateStatementContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -465,7 +465,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitTargetEntity(HqlParser.TargetEntityContext ctx) {
+	public QueryTokenStream visitTargetEntity(HqlParser.TargetEntityContext ctx) {
 
 		HqlParser.VariableContext variable = ctx.variable();
 
@@ -481,16 +481,16 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSetClause(HqlParser.SetClauseContext ctx) {
+	public QueryTokenStream visitSetClause(HqlParser.SetClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.SET()));
-		return builder.append(QueryRendererBuilder.concat(ctx.assignment(), this::visit, TOKEN_COMMA));
+		return builder.append(QueryTokenStream.concat(ctx.assignment(), this::visit, TOKEN_COMMA));
 	}
 
 	@Override
-	public QueryRendererBuilder visitAssignment(HqlParser.AssignmentContext ctx) {
+	public QueryTokenStream visitAssignment(HqlParser.AssignmentContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -502,7 +502,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDeleteStatement(HqlParser.DeleteStatementContext ctx) {
+	public QueryTokenStream visitDeleteStatement(HqlParser.DeleteStatementContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -522,7 +522,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitInsertStatement(HqlParser.InsertStatementContext ctx) {
+	public QueryTokenStream visitInsertStatement(HqlParser.InsertStatementContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -545,42 +545,42 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitTargetFields(HqlParser.TargetFieldsContext ctx) {
+	public QueryTokenStream visitTargetFields(HqlParser.TargetFieldsContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(TOKEN_OPEN_PAREN);
-		builder.append(QueryRendererBuilder.concat(ctx.simplePath(), this::visit, TOKEN_COMMA));
+		builder.append(QueryTokenStream.concat(ctx.simplePath(), this::visit, TOKEN_COMMA));
 		builder.append(TOKEN_CLOSE_PAREN);
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitValuesList(HqlParser.ValuesListContext ctx) {
+	public QueryTokenStream visitValuesList(HqlParser.ValuesListContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.VALUES()));
-		builder.append(QueryRendererBuilder.concat(ctx.values(), this::visit, TOKEN_COMMA));
+		builder.append(QueryTokenStream.concat(ctx.values(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitValues(HqlParser.ValuesContext ctx) {
+	public QueryTokenStream visitValues(HqlParser.ValuesContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(TOKEN_OPEN_PAREN);
-		builder.append(QueryRendererBuilder.concat(ctx.expression(), this::visit, TOKEN_COMMA));
+		builder.append(QueryTokenStream.concat(ctx.expression(), this::visit, TOKEN_COMMA));
 		builder.append(TOKEN_CLOSE_PAREN);
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitInstantiation(HqlParser.InstantiationContext ctx) {
+	public QueryTokenStream visitInstantiation(HqlParser.InstantiationContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -594,7 +594,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitAlias(HqlParser.AliasContext ctx) {
+	public QueryTokenStream visitAlias(HqlParser.AliasContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -608,7 +608,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGroupedItem(HqlParser.GroupedItemContext ctx) {
+	public QueryTokenStream visitGroupedItem(HqlParser.GroupedItemContext ctx) {
 
 		if (ctx.identifier() != null) {
 			return visit(ctx.identifier());
@@ -617,12 +617,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.expression() != null) {
 			return visit(ctx.expression());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitSortedItem(HqlParser.SortedItemContext ctx) {
+	public QueryTokenStream visitSortedItem(HqlParser.SortedItemContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -640,7 +640,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSortExpression(HqlParser.SortExpressionContext ctx) {
+	public QueryTokenStream visitSortExpression(HqlParser.SortExpressionContext ctx) {
 
 		if (ctx.identifier() != null) {
 			return visit(ctx.identifier());
@@ -649,24 +649,24 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.expression() != null) {
 			return visit(ctx.expression());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitSortDirection(HqlParser.SortDirectionContext ctx) {
+	public QueryTokenStream visitSortDirection(HqlParser.SortDirectionContext ctx) {
 
 		if (ctx.ASC() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.ASC()));
 		} else if (ctx.DESC() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.DESC()));
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitNullsPrecedence(HqlParser.NullsPrecedenceContext ctx) {
+	public QueryTokenStream visitNullsPrecedence(HqlParser.NullsPrecedenceContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -682,7 +682,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitLimitClause(HqlParser.LimitClauseContext ctx) {
+	public QueryTokenStream visitLimitClause(HqlParser.LimitClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -693,7 +693,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitOffsetClause(HqlParser.OffsetClauseContext ctx) {
+	public QueryTokenStream visitOffsetClause(HqlParser.OffsetClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -710,7 +710,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFetchClause(HqlParser.FetchClauseContext ctx) {
+	public QueryTokenStream visitFetchClause(HqlParser.FetchClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -746,12 +746,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSubquery(HqlParser.SubqueryContext ctx) {
+	public QueryTokenStream visitSubquery(HqlParser.SubqueryContext ctx) {
 		return visit(ctx.queryExpression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelectClause(HqlParser.SelectClauseContext ctx) {
+	public QueryTokenStream visitSelectClause(HqlParser.SelectClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -767,12 +767,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelectionList(HqlParser.SelectionListContext ctx) {
-		return QueryRendererBuilder.concat(ctx.selection(), this::visit, TOKEN_COMMA);
+	public QueryTokenStream visitSelectionList(HqlParser.SelectionListContext ctx) {
+		return QueryTokenStream.concat(ctx.selection(), this::visit, TOKEN_COMMA);
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelection(HqlParser.SelectionContext ctx) {
+	public QueryTokenStream visitSelection(HqlParser.SelectionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -786,7 +786,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelectExpression(HqlParser.SelectExpressionContext ctx) {
+	public QueryTokenStream visitSelectExpression(HqlParser.SelectExpressionContext ctx) {
 
 		if (ctx.instantiation() != null) {
 			return visit(ctx.instantiation());
@@ -797,12 +797,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.expressionOrPredicate() != null) {
 			return visit(ctx.expressionOrPredicate());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitMapEntrySelection(HqlParser.MapEntrySelectionContext ctx) {
+	public QueryTokenStream visitMapEntrySelection(HqlParser.MapEntrySelectionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -815,7 +815,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJpaSelectObjectSyntax(HqlParser.JpaSelectObjectSyntaxContext ctx) {
+	public QueryTokenStream visitJpaSelectObjectSyntax(HqlParser.JpaSelectObjectSyntaxContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -828,18 +828,18 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitWhereClause(HqlParser.WhereClauseContext ctx) {
+	public QueryTokenStream visitWhereClause(HqlParser.WhereClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.WHERE()));
-		builder.append(QueryRendererBuilder.concatExpressions(ctx.predicate(), this::visit, TOKEN_COMMA));
+		builder.append(QueryTokenStream.concatExpressions(ctx.predicate(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoinType(HqlParser.JoinTypeContext ctx) {
+	public QueryTokenStream visitJoinType(HqlParser.JoinTypeContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -866,7 +866,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCrossJoin(HqlParser.CrossJoinContext ctx) {
+	public QueryTokenStream visitCrossJoin(HqlParser.CrossJoinContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -882,7 +882,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJoinRestriction(HqlParser.JoinRestrictionContext ctx) {
+	public QueryTokenStream visitJoinRestriction(HqlParser.JoinRestrictionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -898,7 +898,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitJpaCollectionJoin(HqlParser.JpaCollectionJoinContext ctx) {
+	public QueryTokenStream visitJpaCollectionJoin(HqlParser.JpaCollectionJoinContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -916,45 +916,42 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGroupByClause(HqlParser.GroupByClauseContext ctx) {
+	public QueryTokenStream visitGroupByClause(HqlParser.GroupByClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.GROUP()));
 		builder.append(QueryTokens.expression(ctx.BY()));
-		builder.append(QueryRendererBuilder.concat(ctx.groupedItem(), this::visit, TOKEN_COMMA));
+		builder.append(QueryTokenStream.concat(ctx.groupedItem(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitOrderByClause(HqlParser.OrderByClauseContext ctx) {
+	public QueryTokenStream visitOrderByClause(HqlParser.OrderByClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.ORDER()));
 		builder.append(QueryTokens.expression(ctx.BY()));
-
-		QueryRendererBuilder concat = QueryRendererBuilder.concat(ctx.sortedItem(), this::visit, TOKEN_COMMA);
-
-		builder.appendExpression(concat);
+		builder.appendExpression(QueryTokenStream.concat(ctx.sortedItem(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitHavingClause(HqlParser.HavingClauseContext ctx) {
+	public QueryTokenStream visitHavingClause(HqlParser.HavingClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.HAVING()));
-		builder.appendExpression(QueryRendererBuilder.concat(ctx.predicate(), this::visit, TOKEN_COMMA));
+		builder.appendExpression(QueryTokenStream.concat(ctx.predicate(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitSetOperator(HqlParser.SetOperatorContext ctx) {
+	public QueryTokenStream visitSetOperator(HqlParser.SetOperatorContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -974,7 +971,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitLiteral(HqlParser.LiteralContext ctx) {
+	public QueryTokenStream visitLiteral(HqlParser.LiteralContext ctx) {
 
 		if (ctx.NULL() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.NULL()));
@@ -989,36 +986,36 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.binaryLiteral() != null) {
 			return visit(ctx.binaryLiteral());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitBooleanLiteral(HqlParser.BooleanLiteralContext ctx) {
+	public QueryTokenStream visitBooleanLiteral(HqlParser.BooleanLiteralContext ctx) {
 
 		if (ctx.TRUE() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.TRUE()));
 		} else if (ctx.FALSE() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.FALSE()));
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitStringLiteral(HqlParser.StringLiteralContext ctx) {
+	public QueryTokenStream visitStringLiteral(HqlParser.StringLiteralContext ctx) {
 
 		if (ctx.STRINGLITERAL() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.STRINGLITERAL()));
 		} else if (ctx.CHARACTER() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.CHARACTER()));
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitNumericLiteral(HqlParser.NumericLiteralContext ctx) {
+	public QueryTokenStream visitNumericLiteral(HqlParser.NumericLiteralContext ctx) {
 
 		if (ctx.INTEGER_LITERAL() != null) {
 			return QueryRendererBuilder.from(QueryTokens.token(ctx.INTEGER_LITERAL()));
@@ -1027,12 +1024,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.HEXLITERAL() != null) {
 			return QueryRendererBuilder.from(QueryTokens.token(ctx.HEXLITERAL()));
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitDateTimeLiteral(HqlParser.DateTimeLiteralContext ctx) {
+	public QueryTokenStream visitDateTimeLiteral(HqlParser.DateTimeLiteralContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1077,7 +1074,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDatetimeField(HqlParser.DatetimeFieldContext ctx) {
+	public QueryTokenStream visitDatetimeField(HqlParser.DatetimeFieldContext ctx) {
 
 		if (ctx.YEAR() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.YEAR()));
@@ -1100,12 +1097,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.EPOCH() != null) {
 			return QueryRendererBuilder.from(QueryTokens.expression(ctx.EPOCH()));
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitBinaryLiteral(HqlParser.BinaryLiteralContext ctx) {
+	public QueryTokenStream visitBinaryLiteral(HqlParser.BinaryLiteralContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1115,7 +1112,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 
 			builder.append(TOKEN_OPEN_BRACE);
 
-			builder.append(QueryRendererBuilder.concat(ctx.HEXLITERAL(), it -> {
+			builder.append(QueryTokenStream.concat(ctx.HEXLITERAL(), it -> {
 				return QueryRendererBuilder.from(QueryTokens.token(it));
 			}, TOKEN_COMMA));
 
@@ -1126,24 +1123,24 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitPlainPrimaryExpression(HqlParser.PlainPrimaryExpressionContext ctx) {
+	public QueryTokenStream visitPlainPrimaryExpression(HqlParser.PlainPrimaryExpressionContext ctx) {
 		return visit(ctx.primaryExpression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitTupleExpression(HqlParser.TupleExpressionContext ctx) {
+	public QueryTokenStream visitTupleExpression(HqlParser.TupleExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(TOKEN_OPEN_PAREN);
-		builder.append(QueryRendererBuilder.concat(ctx.expressionOrPredicate(), this::visit, TOKEN_COMMA));
+		builder.append(QueryTokenStream.concat(ctx.expressionOrPredicate(), this::visit, TOKEN_COMMA));
 		builder.append(TOKEN_CLOSE_PAREN);
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitHqlConcatenationExpression(HqlParser.HqlConcatenationExpressionContext ctx) {
+	public QueryTokenStream visitHqlConcatenationExpression(HqlParser.HqlConcatenationExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1155,7 +1152,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDayOfWeekExpression(HqlParser.DayOfWeekExpressionContext ctx) {
+	public QueryTokenStream visitDayOfWeekExpression(HqlParser.DayOfWeekExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1167,7 +1164,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDayOfMonthExpression(HqlParser.DayOfMonthExpressionContext ctx) {
+	public QueryTokenStream visitDayOfMonthExpression(HqlParser.DayOfMonthExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1179,7 +1176,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitWeekOfYearExpression(HqlParser.WeekOfYearExpressionContext ctx) {
+	public QueryTokenStream visitWeekOfYearExpression(HqlParser.WeekOfYearExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1191,7 +1188,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGroupedExpression(HqlParser.GroupedExpressionContext ctx) {
+	public QueryTokenStream visitGroupedExpression(HqlParser.GroupedExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1203,7 +1200,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitAdditionExpression(HqlParser.AdditionExpressionContext ctx) {
+	public QueryTokenStream visitAdditionExpression(HqlParser.AdditionExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1215,7 +1212,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSignedNumericLiteral(HqlParser.SignedNumericLiteralContext ctx) {
+	public QueryTokenStream visitSignedNumericLiteral(HqlParser.SignedNumericLiteralContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1226,7 +1223,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitMultiplicationExpression(HqlParser.MultiplicationExpressionContext ctx) {
+	public QueryTokenStream visitMultiplicationExpression(HqlParser.MultiplicationExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1238,7 +1235,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSubqueryExpression(HqlParser.SubqueryExpressionContext ctx) {
+	public QueryTokenStream visitSubqueryExpression(HqlParser.SubqueryExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1250,7 +1247,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSignedExpression(HqlParser.SignedExpressionContext ctx) {
+	public QueryTokenStream visitSignedExpression(HqlParser.SignedExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1261,7 +1258,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitToDurationExpression(HqlParser.ToDurationExpressionContext ctx) {
+	public QueryTokenStream visitToDurationExpression(HqlParser.ToDurationExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1272,7 +1269,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFromDurationExpression(HqlParser.FromDurationExpressionContext ctx) {
+	public QueryTokenStream visitFromDurationExpression(HqlParser.FromDurationExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1284,44 +1281,44 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCaseExpression(HqlParser.CaseExpressionContext ctx) {
+	public QueryTokenStream visitCaseExpression(HqlParser.CaseExpressionContext ctx) {
 		return visit(ctx.caseList());
 	}
 
 	@Override
-	public QueryRendererBuilder visitLiteralExpression(HqlParser.LiteralExpressionContext ctx) {
+	public QueryTokenStream visitLiteralExpression(HqlParser.LiteralExpressionContext ctx) {
 		return visit(ctx.literal());
 	}
 
 	@Override
-	public QueryRendererBuilder visitParameterExpression(HqlParser.ParameterExpressionContext ctx) {
+	public QueryTokenStream visitParameterExpression(HqlParser.ParameterExpressionContext ctx) {
 		return visit(ctx.parameter());
 	}
 
 	@Override
-	public QueryRendererBuilder visitFunctionExpression(HqlParser.FunctionExpressionContext ctx) {
+	public QueryTokenStream visitFunctionExpression(HqlParser.FunctionExpressionContext ctx) {
 		return visit(ctx.function());
 	}
 
 	@Override
-	public QueryRendererBuilder visitGeneralPathExpression(HqlParser.GeneralPathExpressionContext ctx) {
+	public QueryTokenStream visitGeneralPathExpression(HqlParser.GeneralPathExpressionContext ctx) {
 		return visit(ctx.generalPathFragment());
 	}
 
 	@Override
-	public QueryRendererBuilder visitIdentificationVariable(HqlParser.IdentificationVariableContext ctx) {
+	public QueryTokenStream visitIdentificationVariable(HqlParser.IdentificationVariableContext ctx) {
 
 		if (ctx.identifier() != null) {
 			return visit(ctx.identifier());
 		} else if (ctx.simplePath() != null) {
 			return visit(ctx.simplePath());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitPath(HqlParser.PathContext ctx) {
+	public QueryTokenStream visitPath(HqlParser.PathContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1340,7 +1337,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGeneralPathFragment(HqlParser.GeneralPathFragmentContext ctx) {
+	public QueryTokenStream visitGeneralPathFragment(HqlParser.GeneralPathFragmentContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1354,7 +1351,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitIndexedPathAccessFragment(HqlParser.IndexedPathAccessFragmentContext ctx) {
+	public QueryTokenStream visitIndexedPathAccessFragment(HqlParser.IndexedPathAccessFragmentContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1372,7 +1369,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimplePath(HqlParser.SimplePathContext ctx) {
+	public QueryTokenStream visitSimplePath(HqlParser.SimplePathContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1382,13 +1379,13 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(TOKEN_DOT);
 		}
 
-		builder.append(QueryRendererBuilder.concat(ctx.simplePathElement(), this::visit, TOKEN_DOT));
+		builder.append(QueryTokenStream.concat(ctx.simplePathElement(), this::visit, TOKEN_DOT));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimplePathElement(HqlParser.SimplePathElementContext ctx) {
+	public QueryTokenStream visitSimplePathElement(HqlParser.SimplePathElementContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1398,19 +1395,19 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCaseList(HqlParser.CaseListContext ctx) {
+	public QueryTokenStream visitCaseList(HqlParser.CaseListContext ctx) {
 
 		if (ctx.simpleCaseExpression() != null) {
 			return visit(ctx.simpleCaseExpression());
 		} else if (ctx.searchedCaseExpression() != null) {
 			return visit(ctx.searchedCaseExpression());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitSimpleCaseExpression(HqlParser.SimpleCaseExpressionContext ctx) {
+	public QueryTokenStream visitSimpleCaseExpression(HqlParser.SimpleCaseExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1433,13 +1430,13 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSearchedCaseExpression(HqlParser.SearchedCaseExpressionContext ctx) {
+	public QueryTokenStream visitSearchedCaseExpression(HqlParser.SearchedCaseExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.CASE()));
 
-		builder.append(QueryRendererBuilder.concatExpressions(ctx.caseWhenPredicateClause(), this::visit, TOKEN_NONE));
+		builder.append(QueryTokenStream.concatExpressions(ctx.caseWhenPredicateClause(), this::visit, TOKEN_NONE));
 
 		if (ctx.ELSE() != null) {
 
@@ -1453,7 +1450,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCaseWhenExpressionClause(HqlParser.CaseWhenExpressionClauseContext ctx) {
+	public QueryTokenStream visitCaseWhenExpressionClause(HqlParser.CaseWhenExpressionClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1466,7 +1463,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCaseWhenPredicateClause(HqlParser.CaseWhenPredicateClauseContext ctx) {
+	public QueryTokenStream visitCaseWhenPredicateClause(HqlParser.CaseWhenPredicateClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1479,7 +1476,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGenericFunction(HqlParser.GenericFunctionContext ctx) {
+	public QueryTokenStream visitGenericFunction(HqlParser.GenericFunctionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 		QueryRendererBuilder nested = QueryRenderer.builder();
@@ -1517,7 +1514,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitFunctionWithSubquery(HqlParser.FunctionWithSubqueryContext ctx) {
+	public QueryTokenStream visitFunctionWithSubquery(HqlParser.FunctionWithSubqueryContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1530,37 +1527,37 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCastFunctionInvocation(HqlParser.CastFunctionInvocationContext ctx) {
+	public QueryTokenStream visitCastFunctionInvocation(HqlParser.CastFunctionInvocationContext ctx) {
 		return visit(ctx.castFunction());
 	}
 
 	@Override
-	public QueryRendererBuilder visitExtractFunctionInvocation(HqlParser.ExtractFunctionInvocationContext ctx) {
+	public QueryTokenStream visitExtractFunctionInvocation(HqlParser.ExtractFunctionInvocationContext ctx) {
 		return visit(ctx.extractFunction());
 	}
 
 	@Override
-	public QueryRendererBuilder visitTrimFunctionInvocation(HqlParser.TrimFunctionInvocationContext ctx) {
+	public QueryTokenStream visitTrimFunctionInvocation(HqlParser.TrimFunctionInvocationContext ctx) {
 		return visit(ctx.trimFunction());
 	}
 
 	@Override
-	public QueryRendererBuilder visitEveryFunctionInvocation(HqlParser.EveryFunctionInvocationContext ctx) {
+	public QueryTokenStream visitEveryFunctionInvocation(HqlParser.EveryFunctionInvocationContext ctx) {
 		return visit(ctx.everyFunction());
 	}
 
 	@Override
-	public QueryRendererBuilder visitAnyFunctionInvocation(HqlParser.AnyFunctionInvocationContext ctx) {
+	public QueryTokenStream visitAnyFunctionInvocation(HqlParser.AnyFunctionInvocationContext ctx) {
 		return visit(ctx.anyFunction());
 	}
 
 	@Override
-	public QueryRendererBuilder visitTreatedPathInvocation(HqlParser.TreatedPathInvocationContext ctx) {
+	public QueryTokenStream visitTreatedPathInvocation(HqlParser.TreatedPathInvocationContext ctx) {
 		return visit(ctx.treatedPath());
 	}
 
 	@Override
-	public QueryRendererBuilder visitFunctionArguments(HqlParser.FunctionArgumentsContext ctx) {
+	public QueryTokenStream visitFunctionArguments(HqlParser.FunctionArgumentsContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1568,13 +1565,13 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(QueryTokens.expression(ctx.DISTINCT()));
 		}
 
-		builder.append(QueryRendererBuilder.concat(ctx.expressionOrPredicate(), this::visit, TOKEN_COMMA));
+		builder.append(QueryTokenStream.concat(ctx.expressionOrPredicate(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitFilterClause(HqlParser.FilterClauseContext ctx) {
+	public QueryTokenStream visitFilterClause(HqlParser.FilterClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1587,7 +1584,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitWithinGroup(HqlParser.WithinGroupContext ctx) {
+	public QueryTokenStream visitWithinGroup(HqlParser.WithinGroupContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1601,7 +1598,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitOverClause(HqlParser.OverClauseContext ctx) {
+	public QueryTokenStream visitOverClause(HqlParser.OverClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 		builder.append(QueryTokens.expression(ctx.OVER()));
@@ -1623,7 +1620,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 			trees.add(ctx.frameClause());
 		}
 
-		nested.appendInline(QueryRendererBuilder.concatExpressions(trees, this::visit, TOKEN_NONE));
+		nested.appendInline(QueryTokenStream.concatExpressions(trees, this::visit, TOKEN_NONE));
 		nested.append(TOKEN_CLOSE_PAREN);
 
 		builder.appendInline(nested);
@@ -1632,20 +1629,20 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitPartitionClause(HqlParser.PartitionClauseContext ctx) {
+	public QueryTokenStream visitPartitionClause(HqlParser.PartitionClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(QueryTokens.expression(ctx.PARTITION()));
 		builder.append(QueryTokens.expression(ctx.BY()));
 
-		builder.append(QueryRendererBuilder.concat(ctx.expression(), this::visit, TOKEN_COMMA));
+		builder.append(QueryTokenStream.concat(ctx.expression(), this::visit, TOKEN_COMMA));
 
 		return builder;
 	}
 
 	@Override
-	public QueryRendererBuilder visitFrameClause(HqlParser.FrameClauseContext ctx) {
+	public QueryTokenStream visitFrameClause(HqlParser.FrameClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1677,7 +1674,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitUnboundedPrecedingFrameStart(HqlParser.UnboundedPrecedingFrameStartContext ctx) {
+	public QueryTokenStream visitUnboundedPrecedingFrameStart(HqlParser.UnboundedPrecedingFrameStartContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1688,7 +1685,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitExpressionPrecedingFrameStart(HqlParser.ExpressionPrecedingFrameStartContext ctx) {
+	public QueryTokenStream visitExpressionPrecedingFrameStart(HqlParser.ExpressionPrecedingFrameStartContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1699,7 +1696,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCurrentRowFrameStart(HqlParser.CurrentRowFrameStartContext ctx) {
+	public QueryTokenStream visitCurrentRowFrameStart(HqlParser.CurrentRowFrameStartContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1710,7 +1707,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitExpressionFollowingFrameStart(HqlParser.ExpressionFollowingFrameStartContext ctx) {
+	public QueryTokenStream visitExpressionFollowingFrameStart(HqlParser.ExpressionFollowingFrameStartContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1721,7 +1718,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCurrentRowFrameExclusion(HqlParser.CurrentRowFrameExclusionContext ctx) {
+	public QueryTokenStream visitCurrentRowFrameExclusion(HqlParser.CurrentRowFrameExclusionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1733,7 +1730,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGroupFrameExclusion(HqlParser.GroupFrameExclusionContext ctx) {
+	public QueryTokenStream visitGroupFrameExclusion(HqlParser.GroupFrameExclusionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1744,7 +1741,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitTiesFrameExclusion(HqlParser.TiesFrameExclusionContext ctx) {
+	public QueryTokenStream visitTiesFrameExclusion(HqlParser.TiesFrameExclusionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1755,7 +1752,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitNoOthersFrameExclusion(HqlParser.NoOthersFrameExclusionContext ctx) {
+	public QueryTokenStream visitNoOthersFrameExclusion(HqlParser.NoOthersFrameExclusionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1767,7 +1764,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitExpressionPrecedingFrameEnd(HqlParser.ExpressionPrecedingFrameEndContext ctx) {
+	public QueryTokenStream visitExpressionPrecedingFrameEnd(HqlParser.ExpressionPrecedingFrameEndContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1778,7 +1775,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCurrentRowFrameEnd(HqlParser.CurrentRowFrameEndContext ctx) {
+	public QueryTokenStream visitCurrentRowFrameEnd(HqlParser.CurrentRowFrameEndContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1789,7 +1786,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitExpressionFollowingFrameEnd(HqlParser.ExpressionFollowingFrameEndContext ctx) {
+	public QueryTokenStream visitExpressionFollowingFrameEnd(HqlParser.ExpressionFollowingFrameEndContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1800,7 +1797,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitUnboundedFollowingFrameEnd(HqlParser.UnboundedFollowingFrameEndContext ctx) {
+	public QueryTokenStream visitUnboundedFollowingFrameEnd(HqlParser.UnboundedFollowingFrameEndContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1811,7 +1808,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCastFunction(HqlParser.CastFunctionContext ctx) {
+	public QueryTokenStream visitCastFunction(HqlParser.CastFunctionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1831,7 +1828,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCastTarget(HqlParser.CastTargetContext ctx) {
+	public QueryTokenStream visitCastTarget(HqlParser.CastTargetContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1859,12 +1856,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCastTargetType(HqlParser.CastTargetTypeContext ctx) {
+	public QueryTokenStream visitCastTargetType(HqlParser.CastTargetTypeContext ctx) {
 		return QueryRendererBuilder.from(QueryTokens.expression(ctx.fullTargetName));
 	}
 
 	@Override
-	public QueryRendererBuilder visitExtractFunction(HqlParser.ExtractFunctionContext ctx) {
+	public QueryTokenStream visitExtractFunction(HqlParser.ExtractFunctionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1893,7 +1890,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitTrimFunction(HqlParser.TrimFunctionContext ctx) {
+	public QueryTokenStream visitTrimFunction(HqlParser.TrimFunctionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1923,12 +1920,12 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDateTimeFunction(HqlParser.DateTimeFunctionContext ctx) {
+	public QueryTokenStream visitDateTimeFunction(HqlParser.DateTimeFunctionContext ctx) {
 		return QueryRendererBuilder.from(QueryTokens.expression(ctx.d));
 	}
 
 	@Override
-	public QueryRendererBuilder visitEveryFunction(HqlParser.EveryFunctionContext ctx) {
+	public QueryTokenStream visitEveryFunction(HqlParser.EveryFunctionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1956,7 +1953,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitAnyFunction(HqlParser.AnyFunctionContext ctx) {
+	public QueryTokenStream visitAnyFunction(HqlParser.AnyFunctionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -1984,7 +1981,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitTreatedPath(HqlParser.TreatedPathContext ctx) {
+	public QueryTokenStream visitTreatedPath(HqlParser.TreatedPathContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2007,7 +2004,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitPathContinutation(HqlParser.PathContinutationContext ctx) {
+	public QueryTokenStream visitPathContinutation(HqlParser.PathContinutationContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2018,17 +2015,17 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitNullExpressionPredicate(HqlParser.NullExpressionPredicateContext ctx) {
+	public QueryTokenStream visitNullExpressionPredicate(HqlParser.NullExpressionPredicateContext ctx) {
 		return visit(ctx.dealingWithNullExpression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitBetweenPredicate(HqlParser.BetweenPredicateContext ctx) {
+	public QueryTokenStream visitBetweenPredicate(HqlParser.BetweenPredicateContext ctx) {
 		return visit(ctx.betweenExpression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitOrPredicate(HqlParser.OrPredicateContext ctx) {
+	public QueryTokenStream visitOrPredicate(HqlParser.OrPredicateContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2040,22 +2037,22 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitRelationalPredicate(HqlParser.RelationalPredicateContext ctx) {
+	public QueryTokenStream visitRelationalPredicate(HqlParser.RelationalPredicateContext ctx) {
 		return visit(ctx.relationalExpression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitExistsPredicate(HqlParser.ExistsPredicateContext ctx) {
+	public QueryTokenStream visitExistsPredicate(HqlParser.ExistsPredicateContext ctx) {
 		return visit(ctx.existsExpression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitCollectionPredicate(HqlParser.CollectionPredicateContext ctx) {
+	public QueryTokenStream visitCollectionPredicate(HqlParser.CollectionPredicateContext ctx) {
 		return visit(ctx.collectionExpression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitAndPredicate(HqlParser.AndPredicateContext ctx) {
+	public QueryTokenStream visitAndPredicate(HqlParser.AndPredicateContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2067,7 +2064,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitGroupedPredicate(HqlParser.GroupedPredicateContext ctx) {
+	public QueryTokenStream visitGroupedPredicate(HqlParser.GroupedPredicateContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2079,17 +2076,17 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitLikePredicate(HqlParser.LikePredicateContext ctx) {
+	public QueryTokenStream visitLikePredicate(HqlParser.LikePredicateContext ctx) {
 		return visit(ctx.stringPatternMatching());
 	}
 
 	@Override
-	public QueryRendererBuilder visitInPredicate(HqlParser.InPredicateContext ctx) {
+	public QueryTokenStream visitInPredicate(HqlParser.InPredicateContext ctx) {
 		return visit(ctx.inExpression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitNotPredicate(HqlParser.NotPredicateContext ctx) {
+	public QueryTokenStream visitNotPredicate(HqlParser.NotPredicateContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2100,24 +2097,24 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitExpressionPredicate(HqlParser.ExpressionPredicateContext ctx) {
+	public QueryTokenStream visitExpressionPredicate(HqlParser.ExpressionPredicateContext ctx) {
 		return visit(ctx.expression());
 	}
 
 	@Override
-	public QueryRendererBuilder visitExpressionOrPredicate(HqlParser.ExpressionOrPredicateContext ctx) {
+	public QueryTokenStream visitExpressionOrPredicate(HqlParser.ExpressionOrPredicateContext ctx) {
 
 		if (ctx.expression() != null) {
 			return visit(ctx.expression());
 		} else if (ctx.predicate() != null) {
 			return visit(ctx.predicate());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitRelationalExpression(HqlParser.RelationalExpressionContext ctx) {
+	public QueryTokenStream visitRelationalExpression(HqlParser.RelationalExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2129,7 +2126,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitBetweenExpression(HqlParser.BetweenExpressionContext ctx) {
+	public QueryTokenStream visitBetweenExpression(HqlParser.BetweenExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2148,7 +2145,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitDealingWithNullExpression(HqlParser.DealingWithNullExpressionContext ctx) {
+	public QueryTokenStream visitDealingWithNullExpression(HqlParser.DealingWithNullExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2172,7 +2169,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitStringPatternMatching(HqlParser.StringPatternMatchingContext ctx) {
+	public QueryTokenStream visitStringPatternMatching(HqlParser.StringPatternMatchingContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2205,7 +2202,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitInExpression(HqlParser.InExpressionContext ctx) {
+	public QueryTokenStream visitInExpression(HqlParser.InExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2222,7 +2219,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitInList(HqlParser.InListContext ctx) {
+	public QueryTokenStream visitInList(HqlParser.InListContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2247,7 +2244,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.expressionOrPredicate() != null) {
 
 			builder.append(TOKEN_OPEN_PAREN);
-			builder.appendInline(QueryRendererBuilder.concat(ctx.expressionOrPredicate(), this::visit, TOKEN_COMMA));
+			builder.appendInline(QueryTokenStream.concat(ctx.expressionOrPredicate(), this::visit, TOKEN_COMMA));
 			builder.append(TOKEN_CLOSE_PAREN);
 		}
 
@@ -2255,7 +2252,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitExistsExpression(HqlParser.ExistsExpressionContext ctx) {
+	public QueryTokenStream visitExistsExpression(HqlParser.ExistsExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2283,7 +2280,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitCollectionExpression(HqlParser.CollectionExpressionContext ctx) {
+	public QueryTokenStream visitCollectionExpression(HqlParser.CollectionExpressionContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2313,7 +2310,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitInstantiationTarget(HqlParser.InstantiationTargetContext ctx) {
+	public QueryTokenStream visitInstantiationTarget(HqlParser.InstantiationTargetContext ctx) {
 
 		if (ctx.LIST() != null) {
 			return QueryRendererBuilder.from(QueryTokens.token(ctx.LIST()));
@@ -2323,17 +2320,17 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 
 			return visit(ctx.simplePath());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitInstantiationArguments(HqlParser.InstantiationArgumentsContext ctx) {
-		return QueryRendererBuilder.concat(ctx.instantiationArgument(), this::visit, TOKEN_COMMA);
+	public QueryTokenStream visitInstantiationArguments(HqlParser.InstantiationArgumentsContext ctx) {
+		return QueryTokenStream.concat(ctx.instantiationArgument(), this::visit, TOKEN_COMMA);
 	}
 
 	@Override
-	public QueryRendererBuilder visitInstantiationArgument(HqlParser.InstantiationArgumentContext ctx) {
+	public QueryTokenStream visitInstantiationArgument(HqlParser.InstantiationArgumentContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2351,31 +2348,31 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitParameterOrIntegerLiteral(HqlParser.ParameterOrIntegerLiteralContext ctx) {
+	public QueryTokenStream visitParameterOrIntegerLiteral(HqlParser.ParameterOrIntegerLiteralContext ctx) {
 
 		if (ctx.parameter() != null) {
 			return visit(ctx.parameter());
 		} else if (ctx.INTEGER_LITERAL() != null) {
 			return QueryRendererBuilder.from(QueryTokens.token(ctx.INTEGER_LITERAL()));
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitParameterOrNumberLiteral(HqlParser.ParameterOrNumberLiteralContext ctx) {
+	public QueryTokenStream visitParameterOrNumberLiteral(HqlParser.ParameterOrNumberLiteralContext ctx) {
 
 		if (ctx.parameter() != null) {
 			return visit(ctx.parameter());
 		} else if (ctx.numericLiteral() != null) {
 			return visit(ctx.numericLiteral());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitVariable(HqlParser.VariableContext ctx) {
+	public QueryTokenStream visitVariable(HqlParser.VariableContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2391,7 +2388,7 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitParameter(HqlParser.ParameterContext ctx) {
+	public QueryTokenStream visitParameter(HqlParser.ParameterContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
@@ -2412,32 +2409,32 @@ class HqlQueryRenderer extends HqlBaseVisitor<QueryRendererBuilder> {
 	}
 
 	@Override
-	public QueryRendererBuilder visitEntityName(HqlParser.EntityNameContext ctx) {
-		return QueryRendererBuilder.concat(ctx.identifier(), this::visit, TOKEN_DOT);
+	public QueryTokenStream visitEntityName(HqlParser.EntityNameContext ctx) {
+		return QueryTokenStream.concat(ctx.identifier(), this::visit, TOKEN_DOT);
 	}
 
 	@Override
-	public QueryRendererBuilder visitIdentifier(HqlParser.IdentifierContext ctx) {
+	public QueryTokenStream visitIdentifier(HqlParser.IdentifierContext ctx) {
 
 		if (ctx.reservedWord() != null) {
 			return visit(ctx.reservedWord());
 		} else {
-			return QueryRenderer.builder();
+			return QueryTokenStream.empty();
 		}
 	}
 
 	@Override
-	public QueryRendererBuilder visitCharacter(HqlParser.CharacterContext ctx) {
+	public QueryTokenStream visitCharacter(HqlParser.CharacterContext ctx) {
 		return QueryRendererBuilder.from(QueryTokens.expression(ctx.CHARACTER()));
 	}
 
 	@Override
-	public QueryRendererBuilder visitFunctionName(HqlParser.FunctionNameContext ctx) {
-		return QueryRendererBuilder.concat(ctx.reservedWord(), this::visit, TOKEN_DOT);
+	public QueryTokenStream visitFunctionName(HqlParser.FunctionNameContext ctx) {
+		return QueryTokenStream.concat(ctx.reservedWord(), this::visit, TOKEN_DOT);
 	}
 
 	@Override
-	public QueryRendererBuilder visitReservedWord(HqlParser.ReservedWordContext ctx) {
+	public QueryTokenStream visitReservedWord(HqlParser.ReservedWordContext ctx) {
 
 		if (ctx.IDENTIFICATION_VARIABLE() != null) {
 			return QueryRendererBuilder.from(QueryTokens.token(ctx.IDENTIFICATION_VARIABLE()));

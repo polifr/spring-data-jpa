@@ -170,12 +170,12 @@ class HqlCountQueryTransformer extends HqlQueryRenderer {
 	}
 
 	@Override
-	public QueryRendererBuilder visitSelectClause(HqlParser.SelectClauseContext ctx) {
+	public QueryTokenStream visitSelectClause(HqlParser.SelectClauseContext ctx) {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 		builder.append(QueryTokens.expression(ctx.SELECT()));
 
-		QueryRendererBuilder selectionListbuilder = visit(ctx.selectionList());
+		QueryTokenStream selectionListbuilder = visit(ctx.selectionList());
 
 		if (!isSubquery(ctx)) {
 
