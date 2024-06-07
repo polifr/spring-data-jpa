@@ -61,8 +61,8 @@ class JpaQueryEnhancer implements QueryEnhancer {
 		this.countQueryFunction = countQueryFunction;
 		this.introspector.visit(context);
 
-		List<JpaQueryParsingToken> tokens = introspector.getProjection();
-		this.projection = tokens.isEmpty() ? "" : QueryRenderer.TokenRenderer.render(tokens);
+		List<QueryToken> tokens = introspector.getProjection();
+		this.projection = tokens.isEmpty() ? "" : QueryRenderer.from(tokens).render();
 	}
 
 	static <P extends Parser> ParserRuleContext parse(String query, Function<CharStream, Lexer> lexerFactoryFunction,

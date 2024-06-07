@@ -15,7 +15,7 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken.*;
+import static org.springframework.data.jpa.repository.query.QueryTokens.*;
 
 import java.util.List;
 
@@ -91,7 +91,7 @@ class EqlSortedQueryTransformer extends EqlQueryRenderer {
 
 		if (sort.isSorted()) {
 
-			List<JpaQueryParsingToken> sortBy = transformerSupport.orderBy(primaryFromAlias, sort);
+			List<QueryToken> sortBy = transformerSupport.orderBy(primaryFromAlias, sort);
 
 			if (ctx.orderby_clause() != null) {
 
@@ -111,7 +111,7 @@ class EqlSortedQueryTransformer extends EqlQueryRenderer {
 		QueryRendererBuilder builder = super.visitSelect_item(ctx);
 
 		if (ctx.result_variable() != null) {
-			transformerSupport.registerAlias(builder.lastToken());
+			transformerSupport.registerAlias(builder.getLast());
 		}
 
 		return builder;
@@ -121,7 +121,7 @@ class EqlSortedQueryTransformer extends EqlQueryRenderer {
 	public QueryRendererBuilder visitJoin(EqlParser.JoinContext ctx) {
 
 		QueryRendererBuilder builder = super.visitJoin(ctx);
-		transformerSupport.registerAlias(builder.lastToken());
+		transformerSupport.registerAlias(builder.getLast());
 
 		return builder;
 	}

@@ -15,15 +15,7 @@
  */
 package org.springframework.data.jpa.repository;
 
-import java.lang.reflect.Method;
-
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.provider.PersistenceProvider;
-import org.springframework.data.jpa.repository.query.JpaQueryMethod;
-import org.springframework.data.jpa.repository.query.StringQuery;
-import org.springframework.data.projection.ProjectionFactory;
-import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
-import org.springframework.data.repository.core.support.DefaultRepositoryMetadata;
+import org.springframework.data.jpa.repository.query.HqlParserTests;
 
 /**
  * @author Mark Paluch
@@ -32,9 +24,9 @@ public class Profiler {
 
 	public static void main(String[] args) throws Exception {
 
-		DefaultRepositoryMetadata art = new DefaultRepositoryMetadata(PersonRepository.class);
-		Method method = PersonRepository.class.getMethod("findAllWithAnnotatedQueryByFirstname", String.class, Sort.class);
-		ProjectionFactory projectionFactory = new SpelAwareProxyProjectionFactory();
+		HqlParserTests tests = new HqlParserTests();
+		HqlParserTests.BenchmarkParameters parameters = new HqlParserTests.BenchmarkParameters();
+		parameters.doSetup();
 
 		System.out.println("Ready. Waiting 10sec");
 		Thread.sleep(10000);
@@ -44,8 +36,7 @@ public class Profiler {
 
 		while (true) {
 
-			JpaQueryMethod queryMethod = new JpaQueryMethod(method, art, projectionFactory, PersistenceProvider.HIBERNATE);
-			StringQuery stringQuery = new StringQuery(queryMethod.getRequiredAnnotatedQuery(), false);
+			tests.measure(parameters);
 		}
 
 	}

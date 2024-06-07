@@ -15,7 +15,7 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken.*;
+import static org.springframework.data.jpa.repository.query.QueryTokens.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,15 +92,15 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.UNION() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.UNION()));
+			builder.append(QueryTokens.expression(ctx.UNION()));
 		} else if (ctx.INTERSECT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.INTERSECT()));
+			builder.append(QueryTokens.expression(ctx.INTERSECT()));
 		} else if (ctx.EXCEPT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.EXCEPT()));
+			builder.append(QueryTokens.expression(ctx.EXCEPT()));
 		}
 
 		if (ctx.ALL() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.ALL()));
+			builder.append(QueryTokens.expression(ctx.ALL()));
 		}
 
 		return builder;
@@ -139,7 +139,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.FROM()));
+		builder.append(QueryTokens.expression(ctx.FROM()));
 		builder.appendInline(visit(ctx.identification_variable_declaration()));
 
 		if (!ctx.identificationVariableDeclarationOrCollectionMemberDeclaration().isEmpty()) {
@@ -207,7 +207,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		}
 
 		if (ctx.AS() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.AS()));
+			builder.append(QueryTokens.expression(ctx.AS()));
 		}
 
 		builder.appendExpression(visit(ctx.identification_variable()));
@@ -224,7 +224,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		builder.appendExpression(visit(ctx.join_association_path_expression()));
 
 		if (ctx.AS() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.AS()));
+			builder.append(QueryTokens.expression(ctx.AS()));
 		}
 		if (ctx.identification_variable() != null) {
 			builder.appendExpression(visit(ctx.identification_variable()));
@@ -242,11 +242,11 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.appendExpression(visit(ctx.join_spec()));
-		builder.append(JpaQueryParsingToken.expression(ctx.FETCH()));
+		builder.append(QueryTokens.expression(ctx.FETCH()));
 		builder.appendExpression(visit(ctx.join_association_path_expression()));
 
 		if (ctx.AS() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.AS()));
+			builder.append(QueryTokens.expression(ctx.AS()));
 		}
 		if (ctx.identification_variable() != null) {
 			builder.appendExpression(visit(ctx.identification_variable()));
@@ -264,16 +264,16 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.LEFT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.LEFT()));
+			builder.append(QueryTokens.expression(ctx.LEFT()));
 		}
 		if (ctx.OUTER() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.OUTER()));
+			builder.append(QueryTokens.expression(ctx.OUTER()));
 		}
 		if (ctx.INNER() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.INNER()));
+			builder.append(QueryTokens.expression(ctx.INNER()));
 		}
 		if (ctx.JOIN() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.JOIN()));
+			builder.append(QueryTokens.expression(ctx.JOIN()));
 		}
 
 		return builder;
@@ -284,7 +284,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.ON()));
+		builder.append(QueryTokens.expression(ctx.ON()));
 		builder.appendExpression(visit(ctx.conditional_expression()));
 
 		return builder;
@@ -308,10 +308,10 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 				QueryRendererBuilder nested = QueryRenderer.builder();
 
-				nested.append(JpaQueryParsingToken.token(ctx.TREAT()));
+				nested.append(QueryTokens.token(ctx.TREAT()));
 				nested.append(TOKEN_OPEN_PAREN);
 				nested.appendInline(visit(ctx.join_collection_valued_path_expression()));
-				nested.append(JpaQueryParsingToken.expression(ctx.AS()));
+				nested.append(QueryTokens.expression(ctx.AS()));
 				nested.appendInline(visit(ctx.subtype()));
 				nested.append(TOKEN_CLOSE_PAREN);
 
@@ -320,10 +320,10 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 				QueryRendererBuilder nested = QueryRenderer.builder();
 
-				nested.append(JpaQueryParsingToken.token(ctx.TREAT()));
+				nested.append(QueryTokens.token(ctx.TREAT()));
 				nested.append(TOKEN_OPEN_PAREN);
 				nested.appendInline(visit(ctx.join_single_valued_path_expression()));
-				nested.append(JpaQueryParsingToken.expression(ctx.AS()));
+				nested.append(QueryTokens.expression(ctx.AS()));
 				nested.appendInline(visit(ctx.subtype()));
 				nested.append(TOKEN_CLOSE_PAREN);
 
@@ -369,13 +369,13 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.token(ctx.IN()));
+		builder.append(QueryTokens.token(ctx.IN()));
 		builder.append(TOKEN_OPEN_PAREN);
 		builder.appendInline(visit(ctx.collection_valued_path_expression()));
 		builder.append(TOKEN_CLOSE_PAREN);
 
 		if (ctx.AS() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.AS()));
+			builder.append(QueryTokens.expression(ctx.AS()));
 		}
 
 		builder.appendExpression(visit(ctx.identification_variable()));
@@ -393,7 +393,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(visit(ctx.map_field_identification_variable()));
 		} else if (ctx.identification_variable() != null) {
 
-			builder.append(JpaQueryParsingToken.expression(ctx.ENTRY()));
+			builder.append(QueryTokens.expression(ctx.ENTRY()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.append(visit(ctx.identification_variable()));
 			builder.append(TOKEN_CLOSE_PAREN);
@@ -410,13 +410,13 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		if (ctx.KEY() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.KEY()));
+			builder.append(QueryTokens.token(ctx.KEY()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.identification_variable()));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.VALUE() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.VALUE()));
+			builder.append(QueryTokens.token(ctx.VALUE()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.identification_variable()));
 			builder.append(TOKEN_CLOSE_PAREN);
@@ -434,10 +434,10 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(visit(ctx.qualified_identification_variable()));
 		} else if (ctx.qualified_identification_variable() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.TREAT()));
+			builder.append(QueryTokens.token(ctx.TREAT()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.qualified_identification_variable()));
-			builder.append(JpaQueryParsingToken.expression(ctx.AS()));
+			builder.append(QueryTokens.expression(ctx.AS()));
 			builder.appendInline(visit(ctx.subtype()));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.state_field_path_expression() != null) {
@@ -495,10 +495,10 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.token(ctx.TREAT()));
+		builder.append(QueryTokens.token(ctx.TREAT()));
 		builder.append(TOKEN_OPEN_PAREN);
 		builder.appendInline(visit(ctx.general_subpath()));
-		builder.append(JpaQueryParsingToken.expression(ctx.AS()));
+		builder.append(QueryTokens.expression(ctx.AS()));
 		builder.appendInline(visit(ctx.subtype()));
 		builder.append(TOKEN_CLOSE_PAREN);
 
@@ -562,18 +562,18 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.UPDATE()));
+		builder.append(QueryTokens.expression(ctx.UPDATE()));
 		builder.appendExpression(visit(ctx.entity_name()));
 
 		if (ctx.AS() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.AS()));
+			builder.append(QueryTokens.expression(ctx.AS()));
 		}
 
 		if (ctx.identification_variable() != null) {
 			builder.appendExpression(visit(ctx.identification_variable()));
 		}
 
-		builder.append(JpaQueryParsingToken.expression(ctx.SET()));
+		builder.append(QueryTokens.expression(ctx.SET()));
 		builder.appendExpression(QueryRendererBuilder.concat(ctx.update_item(), this::visit, TOKEN_COMMA));
 
 		return builder;
@@ -612,7 +612,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		} else if (ctx.simple_entity_expression() != null) {
 			return visit(ctx.simple_entity_expression());
 		} else if (ctx.NULL() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.NULL()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.NULL()));
 		} else {
 			return QueryRenderer.builder();
 		}
@@ -623,12 +623,12 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.DELETE()));
-		builder.append(JpaQueryParsingToken.expression(ctx.FROM()));
+		builder.append(QueryTokens.expression(ctx.DELETE()));
+		builder.append(QueryTokens.expression(ctx.FROM()));
 		builder.appendExpression(visit(ctx.entity_name()));
 
 		if (ctx.AS() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.AS()));
+			builder.append(QueryTokens.expression(ctx.AS()));
 		}
 		if (ctx.identification_variable() != null) {
 			builder.appendExpression(visit(ctx.identification_variable()));
@@ -642,10 +642,10 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.SELECT()));
+		builder.append(QueryTokens.expression(ctx.SELECT()));
 
 		if (ctx.DISTINCT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.DISTINCT()));
+			builder.append(QueryTokens.expression(ctx.DISTINCT()));
 		}
 
 		builder.appendExpression(QueryRendererBuilder.concat(ctx.select_item(), this::visit, TOKEN_COMMA));
@@ -661,7 +661,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		builder.appendExpression(visit(ctx.select_expression()));
 
 		if (ctx.AS() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.AS()));
+			builder.append(QueryTokens.expression(ctx.AS()));
 		}
 
 		if (ctx.result_variable() != null) {
@@ -688,7 +688,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 				QueryRendererBuilder builder = QueryRenderer.builder();
 
-				builder.append(JpaQueryParsingToken.token(ctx.OBJECT()));
+				builder.append(QueryTokens.token(ctx.OBJECT()));
 				builder.append(TOKEN_OPEN_PAREN);
 				builder.appendInline(visit(ctx.identification_variable()));
 				builder.append(TOKEN_CLOSE_PAREN);
@@ -707,7 +707,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.NEW()));
+		builder.append(QueryTokens.expression(ctx.NEW()));
 		builder.append(visit(ctx.constructor_name()));
 		builder.append(TOKEN_OPEN_PAREN);
 		builder.appendInline(QueryRendererBuilder.concat(ctx.constructor_item(), this::visit, TOKEN_COMMA));
@@ -742,32 +742,32 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		if (ctx.AVG() != null || ctx.MAX() != null || ctx.MIN() != null || ctx.SUM() != null) {
 
 			if (ctx.AVG() != null) {
-				builder.append(JpaQueryParsingToken.token(ctx.AVG()));
+				builder.append(QueryTokens.token(ctx.AVG()));
 			}
 			if (ctx.MAX() != null) {
-				builder.append(JpaQueryParsingToken.token(ctx.MAX()));
+				builder.append(QueryTokens.token(ctx.MAX()));
 			}
 			if (ctx.MIN() != null) {
-				builder.append(JpaQueryParsingToken.token(ctx.MIN()));
+				builder.append(QueryTokens.token(ctx.MIN()));
 			}
 			if (ctx.SUM() != null) {
-				builder.append(JpaQueryParsingToken.token(ctx.SUM()));
+				builder.append(QueryTokens.token(ctx.SUM()));
 			}
 
 			builder.append(TOKEN_OPEN_PAREN);
 
 			if (ctx.DISTINCT() != null) {
-				builder.append(JpaQueryParsingToken.expression(ctx.DISTINCT()));
+				builder.append(QueryTokens.expression(ctx.DISTINCT()));
 			}
 
 			builder.appendInline(visit(ctx.state_valued_path_expression()));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.COUNT() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.COUNT()));
+			builder.append(QueryTokens.token(ctx.COUNT()));
 			builder.append(TOKEN_OPEN_PAREN);
 			if (ctx.DISTINCT() != null) {
-				builder.append(JpaQueryParsingToken.expression(ctx.DISTINCT()));
+				builder.append(QueryTokens.expression(ctx.DISTINCT()));
 			}
 			if (ctx.identification_variable() != null) {
 				builder.appendInline(visit(ctx.identification_variable()));
@@ -789,7 +789,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.WHERE()));
+		builder.append(QueryTokens.expression(ctx.WHERE()));
 		builder.appendExpression(visit(ctx.conditional_expression()));
 
 		return builder;
@@ -800,8 +800,8 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.GROUP()));
-		builder.append(JpaQueryParsingToken.expression(ctx.BY()));
+		builder.append(QueryTokens.expression(ctx.GROUP()));
+		builder.append(QueryTokens.expression(ctx.BY()));
 		builder.appendExpression(QueryRendererBuilder.concat(ctx.groupby_item(), this::visit, TOKEN_COMMA));
 
 		return builder;
@@ -828,7 +828,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.HAVING()));
+		builder.append(QueryTokens.expression(ctx.HAVING()));
 		builder.appendExpression(visit(ctx.conditional_expression()));
 
 		return builder;
@@ -839,8 +839,8 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.ORDER()));
-		builder.append(JpaQueryParsingToken.expression(ctx.BY()));
+		builder.append(QueryTokens.expression(ctx.ORDER()));
+		builder.append(QueryTokens.expression(ctx.BY()));
 		builder.append(QueryRendererBuilder.concat(ctx.orderby_item(), this::visit, TOKEN_COMMA));
 
 		return builder;
@@ -864,10 +864,10 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		}
 
 		if (ctx.ASC() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.ASC()));
+			builder.append(QueryTokens.expression(ctx.ASC()));
 		}
 		if (ctx.DESC() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.DESC()));
+			builder.append(QueryTokens.expression(ctx.DESC()));
 		}
 
 		if (ctx.nullsPrecedence() != null) {
@@ -918,7 +918,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.FROM()));
+		builder.append(QueryTokens.expression(ctx.FROM()));
 		builder.appendExpression(
 				QueryRendererBuilder.concat(ctx.subselect_identification_variable_declaration(), this::visit, TOKEN_COMMA));
 
@@ -962,9 +962,9 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.SELECT()));
+		builder.append(QueryTokens.expression(ctx.SELECT()));
 		if (ctx.DISTINCT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.DISTINCT()));
+			builder.append(QueryTokens.expression(ctx.DISTINCT()));
 		}
 		builder.append(visit(ctx.simple_select_expression()));
 
@@ -1020,7 +1020,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		if (ctx.conditional_expression() != null) {
 			builder.append(visit(ctx.conditional_expression()));
-			builder.append(JpaQueryParsingToken.expression(ctx.OR()));
+			builder.append(QueryTokens.expression(ctx.OR()));
 			builder.append(visit(ctx.conditional_term()));
 		} else {
 			builder.append(visit(ctx.conditional_term()));
@@ -1036,7 +1036,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		if (ctx.conditional_term() != null) {
 			builder.append(visit(ctx.conditional_term()));
-			builder.append(JpaQueryParsingToken.expression(ctx.AND()));
+			builder.append(QueryTokens.expression(ctx.AND()));
 			builder.append(visit(ctx.conditional_factor()));
 		} else {
 			builder.append(visit(ctx.conditional_factor()));
@@ -1051,7 +1051,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.NOT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.NOT()));
+			builder.append(QueryTokens.expression(ctx.NOT()));
 		}
 
 		builder.append(visit(ctx.conditional_primary()));
@@ -1112,12 +1112,12 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(visit(ctx.arithmetic_expression(0)));
 
 			if (ctx.NOT() != null) {
-				builder.append(JpaQueryParsingToken.expression(ctx.NOT()));
+				builder.append(QueryTokens.expression(ctx.NOT()));
 			}
 
-			builder.append(JpaQueryParsingToken.expression(ctx.BETWEEN()));
+			builder.append(QueryTokens.expression(ctx.BETWEEN()));
 			builder.appendExpression(visit(ctx.arithmetic_expression(1)));
-			builder.append(JpaQueryParsingToken.expression(ctx.AND()));
+			builder.append(QueryTokens.expression(ctx.AND()));
 			builder.appendExpression(visit(ctx.arithmetic_expression(2)));
 
 		} else if (ctx.string_expression(0) != null) {
@@ -1125,12 +1125,12 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.appendExpression(visit(ctx.string_expression(0)));
 
 			if (ctx.NOT() != null) {
-				builder.append(JpaQueryParsingToken.expression(ctx.NOT()));
+				builder.append(QueryTokens.expression(ctx.NOT()));
 			}
 
-			builder.append(JpaQueryParsingToken.expression(ctx.BETWEEN()));
+			builder.append(QueryTokens.expression(ctx.BETWEEN()));
 			builder.appendExpression(visit(ctx.string_expression(1)));
-			builder.append(JpaQueryParsingToken.expression(ctx.AND()));
+			builder.append(QueryTokens.expression(ctx.AND()));
 			builder.appendExpression(visit(ctx.string_expression(2)));
 
 		} else if (ctx.datetime_expression(0) != null) {
@@ -1138,12 +1138,12 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(visit(ctx.datetime_expression(0)));
 
 			if (ctx.NOT() != null) {
-				builder.append(JpaQueryParsingToken.expression(ctx.NOT()));
+				builder.append(QueryTokens.expression(ctx.NOT()));
 			}
 
-			builder.append(JpaQueryParsingToken.expression(ctx.BETWEEN()));
+			builder.append(QueryTokens.expression(ctx.BETWEEN()));
 			builder.appendExpression(visit(ctx.datetime_expression(1)));
-			builder.append(JpaQueryParsingToken.expression(ctx.AND()));
+			builder.append(QueryTokens.expression(ctx.AND()));
 			builder.appendExpression(visit(ctx.datetime_expression(2)));
 		}
 
@@ -1162,10 +1162,10 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(visit(ctx.type_discriminator()));
 		}
 		if (ctx.NOT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.NOT()));
+			builder.append(QueryTokens.expression(ctx.NOT()));
 		}
 		if (ctx.IN() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.IN()));
+			builder.append(QueryTokens.expression(ctx.IN()));
 		}
 
 		if (ctx.in_item() != null && !ctx.in_item().isEmpty()) {
@@ -1207,14 +1207,14 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		builder.append(visit(ctx.string_expression()));
 		if (ctx.NOT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.NOT()));
+			builder.append(QueryTokens.expression(ctx.NOT()));
 		}
-		builder.append(JpaQueryParsingToken.expression(ctx.LIKE()));
+		builder.append(QueryTokens.expression(ctx.LIKE()));
 		builder.appendExpression(visit(ctx.pattern_value()));
 
 		if (ctx.ESCAPE() != null) {
 
-			builder.append(JpaQueryParsingToken.expression(ctx.ESCAPE()));
+			builder.append(QueryTokens.expression(ctx.ESCAPE()));
 			builder.appendExpression(visit(ctx.escape_character()));
 		}
 
@@ -1235,14 +1235,14 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		}
 
 		if (ctx.op != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.op.getText()));
+			builder.append(QueryTokens.expression(ctx.op.getText()));
 		} else {
-			builder.append(JpaQueryParsingToken.expression(ctx.IS()));
+			builder.append(QueryTokens.expression(ctx.IS()));
 			if (ctx.NOT() != null) {
-				builder.append(JpaQueryParsingToken.expression(ctx.NOT()));
+				builder.append(QueryTokens.expression(ctx.NOT()));
 			}
 		}
-		builder.append(JpaQueryParsingToken.expression(ctx.NULL()));
+		builder.append(QueryTokens.expression(ctx.NULL()));
 
 		return builder;
 	}
@@ -1254,11 +1254,11 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.append(visit(ctx.collection_valued_path_expression()));
-		builder.append(JpaQueryParsingToken.expression(ctx.IS()));
+		builder.append(QueryTokens.expression(ctx.IS()));
 		if (ctx.NOT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.NOT()));
+			builder.append(QueryTokens.expression(ctx.NOT()));
 		}
-		builder.append(JpaQueryParsingToken.expression(ctx.EMPTY()));
+		builder.append(QueryTokens.expression(ctx.EMPTY()));
 
 		return builder;
 	}
@@ -1270,11 +1270,11 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		builder.append(visit(ctx.entity_or_value_expression()));
 		if (ctx.NOT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.NOT()));
+			builder.append(QueryTokens.expression(ctx.NOT()));
 		}
-		builder.append(JpaQueryParsingToken.expression(ctx.MEMBER()));
+		builder.append(QueryTokens.expression(ctx.MEMBER()));
 		if (ctx.OF() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.OF()));
+			builder.append(QueryTokens.expression(ctx.OF()));
 		}
 		builder.append(visit(ctx.collection_valued_path_expression()));
 
@@ -1320,10 +1320,10 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.NOT() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.NOT()));
+			builder.append(QueryTokens.expression(ctx.NOT()));
 		}
 
-		builder.append(JpaQueryParsingToken.expression(ctx.EXISTS()));
+		builder.append(QueryTokens.expression(ctx.EXISTS()));
 		builder.append(TOKEN_OPEN_PAREN);
 		builder.appendInline(visit(ctx.subquery()));
 		builder.append(TOKEN_CLOSE_PAREN);
@@ -1337,11 +1337,11 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.ALL() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.ALL()));
+			builder.append(QueryTokens.expression(ctx.ALL()));
 		} else if (ctx.ANY() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.ANY()));
+			builder.append(QueryTokens.expression(ctx.ANY()));
 		} else if (ctx.SOME() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.SOME()));
+			builder.append(QueryTokens.expression(ctx.SOME()));
 		}
 
 		builder.append(TOKEN_OPEN_PAREN);
@@ -1374,7 +1374,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.appendInline(visit(ctx.boolean_expression(0)));
-		builder.append(JpaQueryParsingToken.ventilated(ctx.op));
+		builder.append(QueryTokens.ventilated(ctx.op));
 
 		if (ctx.boolean_expression(1) != null) {
 			builder.append(visit(ctx.boolean_expression(1)));
@@ -1396,7 +1396,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.appendInline(visit(ctx.enum_expression(0)));
-		builder.append(JpaQueryParsingToken.ventilated(ctx.op));
+		builder.append(QueryTokens.ventilated(ctx.op));
 
 		if (ctx.enum_expression(1) != null) {
 			builder.append(visit(ctx.enum_expression(1)));
@@ -1413,7 +1413,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.appendInline(visit(ctx.datetime_expression(0)));
-		builder.append(JpaQueryParsingToken.ventilated(ctx.comparison_operator().op));
+		builder.append(QueryTokens.ventilated(ctx.comparison_operator().op));
 
 		if (ctx.datetime_expression(1) != null) {
 			builder.append(visit(ctx.datetime_expression(1)));
@@ -1430,7 +1430,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.appendExpression(visit(ctx.entity_expression(0)));
-		builder.append(JpaQueryParsingToken.expression(ctx.op));
+		builder.append(QueryTokens.expression(ctx.op));
 
 		if (ctx.entity_expression(1) != null) {
 			builder.append(visit(ctx.entity_expression(1)));
@@ -1464,7 +1464,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.appendInline(visit(ctx.entity_type_expression(0)));
-		builder.append(JpaQueryParsingToken.ventilated(ctx.op));
+		builder.append(QueryTokens.ventilated(ctx.op));
 		builder.append(visit(ctx.entity_type_expression(1)));
 
 		return builder;
@@ -1476,7 +1476,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		builder.appendExpression(visit(ctx.string_expression()));
-		builder.append(JpaQueryParsingToken.expression(ctx.REGEXP()));
+		builder.append(QueryTokens.expression(ctx.REGEXP()));
 		builder.appendExpression(visit(ctx.string_literal()));
 
 		return builder;
@@ -1484,7 +1484,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 	@Override
 	public QueryRendererBuilder visitComparison_operator(EqlParser.Comparison_operatorContext ctx) {
-		return QueryRendererBuilder.from(JpaQueryParsingToken.ventilated(ctx.op));
+		return QueryRendererBuilder.from(QueryTokens.ventilated(ctx.op));
 	}
 
 	@Override
@@ -1495,7 +1495,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		if (ctx.arithmetic_expression() != null) {
 
 			builder.append(visit(ctx.arithmetic_expression()));
-			builder.append(JpaQueryParsingToken.expression(ctx.op));
+			builder.append(QueryTokens.expression(ctx.op));
 			builder.append(visit(ctx.arithmetic_term()));
 
 		} else {
@@ -1513,7 +1513,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		if (ctx.arithmetic_term() != null) {
 
 			builder.appendInline(visit(ctx.arithmetic_term()));
-			builder.append(JpaQueryParsingToken.ventilated(ctx.op));
+			builder.append(QueryTokens.ventilated(ctx.op));
 			builder.append(visit(ctx.arithmetic_factor()));
 		} else {
 			builder.append(visit(ctx.arithmetic_factor()));
@@ -1528,7 +1528,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.op != null) {
-			builder.append(JpaQueryParsingToken.token(ctx.op));
+			builder.append(QueryTokens.token(ctx.op));
 		}
 		builder.appendInline(visit(ctx.arithmetic_primary()));
 
@@ -1728,7 +1728,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.token(ctx.TYPE()));
+		builder.append(QueryTokens.token(ctx.TYPE()));
 		builder.append(TOKEN_OPEN_PAREN);
 
 		if (ctx.general_identification_variable() != null) {
@@ -1750,13 +1750,13 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		if (ctx.LENGTH() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.LENGTH()));
+			builder.append(QueryTokens.token(ctx.LENGTH()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.string_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.LOCATE() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.LOCATE()));
+			builder.append(QueryTokens.token(ctx.LOCATE()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.string_expression(0)));
 			builder.append(TOKEN_COMMA);
@@ -1768,49 +1768,49 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.ABS() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.ABS()));
+			builder.append(QueryTokens.token(ctx.ABS()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.arithmetic_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.CEILING() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.CEILING()));
+			builder.append(QueryTokens.token(ctx.CEILING()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.arithmetic_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.EXP() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.EXP()));
+			builder.append(QueryTokens.token(ctx.EXP()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.arithmetic_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.FLOOR() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.FLOOR()));
+			builder.append(QueryTokens.token(ctx.FLOOR()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.arithmetic_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.LN() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.LN()));
+			builder.append(QueryTokens.token(ctx.LN()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.arithmetic_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.SIGN() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.SIGN()));
+			builder.append(QueryTokens.token(ctx.SIGN()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.arithmetic_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.SQRT() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.SQRT()));
+			builder.append(QueryTokens.token(ctx.SQRT()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.arithmetic_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.MOD() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.MOD()));
+			builder.append(QueryTokens.token(ctx.MOD()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.arithmetic_expression(0)));
 			builder.append(TOKEN_COMMA);
@@ -1818,7 +1818,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.POWER() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.POWER()));
+			builder.append(QueryTokens.token(ctx.POWER()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.arithmetic_expression(0)));
 			builder.append(TOKEN_COMMA);
@@ -1826,7 +1826,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.ROUND() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.ROUND()));
+			builder.append(QueryTokens.token(ctx.ROUND()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.arithmetic_expression(0)));
 			builder.append(TOKEN_COMMA);
@@ -1834,13 +1834,13 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.SIZE() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.SIZE()));
+			builder.append(QueryTokens.token(ctx.SIZE()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.collection_valued_path_expression()));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.INDEX() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.INDEX()));
+			builder.append(QueryTokens.token(ctx.INDEX()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.identification_variable()));
 			builder.append(TOKEN_CLOSE_PAREN);
@@ -1857,21 +1857,21 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.CURRENT_DATE() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.CURRENT_DATE()));
+			builder.append(QueryTokens.expression(ctx.CURRENT_DATE()));
 		} else if (ctx.CURRENT_TIME() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.CURRENT_TIME()));
+			builder.append(QueryTokens.expression(ctx.CURRENT_TIME()));
 		} else if (ctx.CURRENT_TIMESTAMP() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.CURRENT_TIMESTAMP()));
+			builder.append(QueryTokens.expression(ctx.CURRENT_TIMESTAMP()));
 		} else if (ctx.LOCAL() != null) {
 
-			builder.append(JpaQueryParsingToken.expression(ctx.LOCAL()));
+			builder.append(QueryTokens.expression(ctx.LOCAL()));
 
 			if (ctx.DATE() != null) {
-				builder.append(JpaQueryParsingToken.expression(ctx.DATE()));
+				builder.append(QueryTokens.expression(ctx.DATE()));
 			} else if (ctx.TIME() != null) {
-				builder.append(JpaQueryParsingToken.expression(ctx.TIME()));
+				builder.append(QueryTokens.expression(ctx.TIME()));
 			} else if (ctx.DATETIME() != null) {
-				builder.append(JpaQueryParsingToken.expression(ctx.DATETIME()));
+				builder.append(QueryTokens.expression(ctx.DATETIME()));
 			}
 		} else if (ctx.extract_datetime_part() != null) {
 			builder.append(visit(ctx.extract_datetime_part()));
@@ -1887,13 +1887,13 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		if (ctx.CONCAT() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.CONCAT()));
+			builder.append(QueryTokens.token(ctx.CONCAT()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(QueryRendererBuilder.concat(ctx.string_expression(), this::visit, TOKEN_COMMA));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.SUBSTRING() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.SUBSTRING()));
+			builder.append(QueryTokens.token(ctx.SUBSTRING()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.string_expression(0)));
 			builder.append(TOKEN_COMMA);
@@ -1901,7 +1901,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.TRIM() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.TRIM()));
+			builder.append(QueryTokens.token(ctx.TRIM()));
 			builder.append(TOKEN_OPEN_PAREN);
 			if (ctx.trim_specification() != null) {
 				builder.appendExpression(visit(ctx.trim_specification()));
@@ -1910,19 +1910,19 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 				builder.appendExpression(visit(ctx.trim_character()));
 			}
 			if (ctx.FROM() != null) {
-				builder.append(JpaQueryParsingToken.expression(ctx.FROM()));
+				builder.append(QueryTokens.expression(ctx.FROM()));
 			}
 			builder.appendInline(visit(ctx.string_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.LOWER() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.LOWER()));
+			builder.append(QueryTokens.token(ctx.LOWER()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.string_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
 		} else if (ctx.UPPER() != null) {
 
-			builder.append(JpaQueryParsingToken.token(ctx.UPPER()));
+			builder.append(QueryTokens.token(ctx.UPPER()));
 			builder.append(TOKEN_OPEN_PAREN);
 			builder.appendInline(visit(ctx.string_expression(0)));
 			builder.append(TOKEN_CLOSE_PAREN);
@@ -1935,11 +1935,11 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	public QueryRendererBuilder visitTrim_specification(EqlParser.Trim_specificationContext ctx) {
 
 		if (ctx.LEADING() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.LEADING()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.LEADING()));
 		} else if (ctx.TRAILING() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.TRAILING()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.TRAILING()));
 		} else {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.BOTH()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.BOTH()));
 		}
 	}
 
@@ -1948,7 +1948,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.token(ctx.CAST()));
+		builder.append(QueryTokens.token(ctx.CAST()));
 		builder.append(TOKEN_OPEN_PAREN);
 		builder.appendInline(visit(ctx.single_valued_path_expression()));
 		builder.append(TOKEN_SPACE);
@@ -1971,7 +1971,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.FUNCTION() != null) {
-			builder.append(JpaQueryParsingToken.token(ctx.FUNCTION()));
+			builder.append(QueryTokens.token(ctx.FUNCTION()));
 		} else if (ctx.identification_variable() != null) {
 			builder.appendInline(visit(ctx.identification_variable()));
 		}
@@ -1992,10 +1992,10 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.token(ctx.EXTRACT()));
+		builder.append(QueryTokens.token(ctx.EXTRACT()));
 		builder.append(TOKEN_OPEN_PAREN);
 		builder.appendExpression(visit(ctx.datetime_field()));
-		builder.append(JpaQueryParsingToken.expression(ctx.FROM()));
+		builder.append(QueryTokens.expression(ctx.FROM()));
 		builder.appendInline(visit(ctx.datetime_expression()));
 		builder.append(TOKEN_CLOSE_PAREN);
 
@@ -2012,10 +2012,10 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.token(ctx.EXTRACT()));
+		builder.append(QueryTokens.token(ctx.EXTRACT()));
 		builder.append(TOKEN_OPEN_PAREN);
 		builder.appendExpression(visit(ctx.datetime_part()));
-		builder.append(JpaQueryParsingToken.expression(ctx.FROM()));
+		builder.append(QueryTokens.expression(ctx.FROM()));
 		builder.appendInline(visit(ctx.datetime_expression()));
 		builder.append(TOKEN_CLOSE_PAREN);
 
@@ -2060,15 +2060,15 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.CASE()));
+		builder.append(QueryTokens.expression(ctx.CASE()));
 
 		ctx.when_clause().forEach(whenClauseContext -> {
 			builder.appendExpression(visit(whenClauseContext));
 		});
 
-		builder.append(JpaQueryParsingToken.expression(ctx.ELSE()));
+		builder.append(QueryTokens.expression(ctx.ELSE()));
 		builder.appendExpression(visit(ctx.scalar_expression()));
-		builder.append(JpaQueryParsingToken.expression(ctx.END()));
+		builder.append(QueryTokens.expression(ctx.END()));
 
 		return builder;
 	}
@@ -2078,9 +2078,9 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.WHEN()));
+		builder.append(QueryTokens.expression(ctx.WHEN()));
 		builder.append(visit(ctx.conditional_expression()));
-		builder.append(JpaQueryParsingToken.expression(ctx.THEN()));
+		builder.append(QueryTokens.expression(ctx.THEN()));
 		builder.append(visit(ctx.scalar_expression()));
 
 		return builder;
@@ -2091,16 +2091,16 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.CASE()));
+		builder.append(QueryTokens.expression(ctx.CASE()));
 		builder.append(visit(ctx.case_operand()));
 
 		ctx.simple_when_clause().forEach(simpleWhenClauseContext -> {
 			builder.append(visit(simpleWhenClauseContext));
 		});
 
-		builder.append(JpaQueryParsingToken.expression(ctx.ELSE()));
+		builder.append(QueryTokens.expression(ctx.ELSE()));
 		builder.append(visit(ctx.scalar_expression()));
-		builder.append(JpaQueryParsingToken.expression(ctx.END()));
+		builder.append(QueryTokens.expression(ctx.END()));
 
 		return builder;
 	}
@@ -2120,9 +2120,9 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.expression(ctx.WHEN()));
+		builder.append(QueryTokens.expression(ctx.WHEN()));
 		builder.appendExpression(visit(ctx.scalar_expression(0)));
-		builder.append(JpaQueryParsingToken.expression(ctx.THEN()));
+		builder.append(QueryTokens.expression(ctx.THEN()));
 		builder.appendExpression(visit(ctx.scalar_expression(1)));
 
 		return builder;
@@ -2133,7 +2133,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.token(ctx.COALESCE()));
+		builder.append(QueryTokens.token(ctx.COALESCE()));
 		builder.append(TOKEN_OPEN_PAREN);
 		builder.appendInline(QueryRendererBuilder.concat(ctx.scalar_expression(), this::visit, TOKEN_COMMA));
 		builder.append(TOKEN_CLOSE_PAREN);
@@ -2146,7 +2146,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
-		builder.append(JpaQueryParsingToken.token(ctx.NULLIF()));
+		builder.append(QueryTokens.token(ctx.NULLIF()));
 		builder.append(TOKEN_OPEN_PAREN);
 		builder.appendInline(visit(ctx.scalar_expression(0)));
 		builder.append(TOKEN_COMMA);
@@ -2160,7 +2160,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	public QueryRendererBuilder visitTrim_character(EqlParser.Trim_characterContext ctx) {
 
 		if (ctx.CHARACTER() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.CHARACTER()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.CHARACTER()));
 		} else if (ctx.character_valued_input_parameter() != null) {
 			return visit(ctx.character_valued_input_parameter());
 		} else {
@@ -2172,9 +2172,9 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	public QueryRendererBuilder visitIdentification_variable(EqlParser.Identification_variableContext ctx) {
 
 		if (ctx.IDENTIFICATION_VARIABLE() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.IDENTIFICATION_VARIABLE()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.IDENTIFICATION_VARIABLE()));
 		} else if (ctx.f != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.f));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.f));
 		} else {
 			return QueryRenderer.builder();
 		}
@@ -2191,13 +2191,13 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		QueryRendererBuilder builder = QueryRenderer.builder();
 
 		if (ctx.STRINGLITERAL() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.STRINGLITERAL()));
+			builder.append(QueryTokens.expression(ctx.STRINGLITERAL()));
 		} else if (ctx.INTLITERAL() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.INTLITERAL()));
+			builder.append(QueryTokens.expression(ctx.INTLITERAL()));
 		} else if (ctx.FLOATLITERAL() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.FLOATLITERAL()));
+			builder.append(QueryTokens.expression(ctx.FLOATLITERAL()));
 		} else if (ctx.LONGLITERAL() != null) {
-			builder.append(JpaQueryParsingToken.expression(ctx.LONGLITERAL()));
+			builder.append(QueryTokens.expression(ctx.LONGLITERAL()));
 		} else if (ctx.boolean_literal() != null) {
 			builder.append(visit(ctx.boolean_literal()));
 		} else if (ctx.entity_type_literal() != null) {
@@ -2215,11 +2215,11 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 		if (ctx.INTLITERAL() != null) {
 
 			builder.append(TOKEN_QUESTION_MARK);
-			builder.append(JpaQueryParsingToken.expression(ctx.INTLITERAL()));
+			builder.append(QueryTokens.token(ctx.INTLITERAL()));
 		} else if (ctx.identification_variable() != null) {
 
 			builder.append(TOKEN_COLON);
-			builder.append(visit(ctx.identification_variable()));
+			builder.appendInline(visit(ctx.identification_variable()));
 		}
 
 		return builder;
@@ -2239,13 +2239,13 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	public QueryRendererBuilder visitDate_time_timestamp_literal(EqlParser.Date_time_timestamp_literalContext ctx) {
 
 		if (ctx.STRINGLITERAL() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.STRINGLITERAL()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.STRINGLITERAL()));
 		} else if (ctx.DATELITERAL() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.DATELITERAL()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.DATELITERAL()));
 		} else if (ctx.TIMELITERAL() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.TIMELITERAL()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.TIMELITERAL()));
 		} else if (ctx.TIMESTAMPLITERAL() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.TIMESTAMPLITERAL()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.TIMESTAMPLITERAL()));
 		} else {
 			return QueryRenderer.builder();
 		}
@@ -2258,18 +2258,18 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 
 	@Override
 	public QueryRendererBuilder visitEscape_character(EqlParser.Escape_characterContext ctx) {
-		return QueryRendererBuilder.from(JpaQueryParsingToken.token(ctx.CHARACTER()));
+		return QueryRendererBuilder.from(QueryTokens.token(ctx.CHARACTER()));
 	}
 
 	@Override
 	public QueryRendererBuilder visitNumeric_literal(EqlParser.Numeric_literalContext ctx) {
 
 		if (ctx.INTLITERAL() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.token(ctx.INTLITERAL()));
+			return QueryRendererBuilder.from(QueryTokens.token(ctx.INTLITERAL()));
 		} else if (ctx.FLOATLITERAL() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.token(ctx.FLOATLITERAL()));
+			return QueryRendererBuilder.from(QueryTokens.token(ctx.FLOATLITERAL()));
 		} else if (ctx.LONGLITERAL() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.token(ctx.LONGLITERAL()));
+			return QueryRendererBuilder.from(QueryTokens.token(ctx.LONGLITERAL()));
 		} else {
 			return QueryRenderer.builder();
 		}
@@ -2279,9 +2279,9 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	public QueryRendererBuilder visitBoolean_literal(EqlParser.Boolean_literalContext ctx) {
 
 		if (ctx.TRUE() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.token(ctx.TRUE()));
+			return QueryRendererBuilder.from(QueryTokens.token(ctx.TRUE()));
 		} else if (ctx.FALSE() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.token(ctx.FALSE()));
+			return QueryRendererBuilder.from(QueryTokens.token(ctx.FALSE()));
 		} else {
 			return QueryRenderer.builder();
 		}
@@ -2296,9 +2296,9 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	public QueryRendererBuilder visitString_literal(EqlParser.String_literalContext ctx) {
 
 		if (ctx.CHARACTER() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.CHARACTER()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.CHARACTER()));
 		} else if (ctx.STRINGLITERAL() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.STRINGLITERAL()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.STRINGLITERAL()));
 		} else {
 			return QueryRenderer.builder();
 		}
@@ -2372,7 +2372,7 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 			EqlParser.Character_valued_input_parameterContext ctx) {
 
 		if (ctx.CHARACTER() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.CHARACTER()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.CHARACTER()));
 		} else if (ctx.input_parameter() != null) {
 			return visit(ctx.input_parameter());
 		} else {
@@ -2383,9 +2383,9 @@ class EqlQueryRenderer extends EqlBaseVisitor<QueryRendererBuilder> {
 	@Override
 	public QueryRendererBuilder visitReserved_word(EqlParser.Reserved_wordContext ctx) {
 		if (ctx.IDENTIFICATION_VARIABLE() != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.IDENTIFICATION_VARIABLE()));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.IDENTIFICATION_VARIABLE()));
 		} else if (ctx.f != null) {
-			return QueryRendererBuilder.from(JpaQueryParsingToken.expression(ctx.f));
+			return QueryRendererBuilder.from(QueryTokens.expression(ctx.f));
 		} else {
 			return QueryRenderer.builder();
 		}

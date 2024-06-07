@@ -15,7 +15,7 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import static org.springframework.data.jpa.repository.query.JpaQueryParsingToken.*;
+import static org.springframework.data.jpa.repository.query.QueryTokens.*;
 
 import java.util.List;
 
@@ -73,7 +73,7 @@ class HqlSortedQueryTransformer extends HqlQueryRenderer {
 
 			if (sort.isSorted()) {
 
-				List<JpaQueryParsingToken> sortBy = transformerSupport.orderBy(primaryFromAlias, sort);
+				List<QueryToken> sortBy = transformerSupport.orderBy(primaryFromAlias, sort);
 
 				if (ctx.queryOrder() != null) {
 
@@ -101,7 +101,7 @@ class HqlSortedQueryTransformer extends HqlQueryRenderer {
 		QueryRendererBuilder builder = super.visitJoinPath(ctx);
 
 		if (ctx.variable() != null) {
-			transformerSupport.registerAlias(builder.lastToken());
+			transformerSupport.registerAlias(builder.getLast());
 		}
 
 		return builder;
@@ -113,7 +113,7 @@ class HqlSortedQueryTransformer extends HqlQueryRenderer {
 		QueryRendererBuilder builder = super.visitJoinSubquery(ctx);
 
 		if (ctx.variable() != null) {
-			transformerSupport.registerAlias(builder.lastToken());
+			transformerSupport.registerAlias(builder.getLast());
 		}
 
 		return builder;
@@ -125,7 +125,7 @@ class HqlSortedQueryTransformer extends HqlQueryRenderer {
 		QueryRendererBuilder builder = super.visitVariable(ctx);
 
 		if (ctx.identifier() != null) {
-			transformerSupport.registerAlias(builder.lastToken());
+			transformerSupport.registerAlias(builder.getLast());
 		}
 
 		return builder;
